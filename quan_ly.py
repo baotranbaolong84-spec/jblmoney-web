@@ -5,7 +5,6 @@ import time
 from datetime import datetime
 import streamlit.components.v1 as components
 import requests
-import json
 
 # =======================================
 # 1. CẤU HÌNH TRANG WEB
@@ -13,23 +12,27 @@ import json
 st.set_page_config(page_title="JBLMONEY Ultimate", page_icon="💎", layout="centered")
 
 # =======================================
-# 2. CẤU HÌNH API TRỰC TIẾP (KHÔNG DÙNG THƯ VIỆN LỖI CỦA GOOGLE NỮA)
+# 2. AI VƯỢT RÀO (ÉP MÁY CHỦ NHẬN MÃ AQ...)
 # =======================================
-# ⚠️ BOSS DÁN LẠI MÃ AQ... CỦA BOSS VÀO ĐÂY LÀ ĂN NGAY:
-API_KEY_CUA_BOSS = "AQ.Ab8RN6Lzgf1D7bxumH-MWp-swu2Pn_ZRmqyhIjrT5a94F8E0FA"
+# ⚠️ BOSS DÁN MÃ AQ.Ab8RN... VÀO GIỮA HAI DẤU NGOẶC KÉP Ở DÒNG DƯỚI NHÉ:
+API_KEY_CUA_BOSS = "AQ.Ab8RN6L18JnztTs0ml5Qdks6FT2D-5eBLX-oFq-Hiy9Ca-syww"
 
 def hoi_ai_gemini(cau_hoi):
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={API_KEY_CUA_BOSS}"
-    headers = {'Content-Type': 'application/json'}
+    url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"
+    # Ép Google phải hiểu đây là API Key xịn thông qua x-goog-api-key
+    headers = {
+        'Content-Type': 'application/json',
+        'x-goog-api-key': API_KEY_CUA_BOSS
+    }
     data = {"contents": [{"parts": [{"text": cau_hoi}]}]}
     try:
         response = requests.post(url, headers=headers, json=data)
         if response.status_code == 200:
             return response.json()['candidates'][0]['content']['parts'][0]['text']
         else:
-            return f"Lỗi máy chủ Google: {response.text}"
+            return f"Căng rồi, Google báo lỗi: {response.text}"
     except Exception as e:
-        return f"Lỗi kết nối mạng: {e}"
+        return f"Lỗi kết nối mạng của Boss: {e}"
 
 # =======================================
 # 3. KHO DỮ LIỆU & CSS GIAO DIỆN
@@ -86,7 +89,7 @@ if not st.session_state.dang_nhap:
     st.stop()
 
 # =======================================
-# 5. SIDEBAR & AI TRỰC TIẾP
+# 5. SIDEBAR & CHAT AI TRỰC TIẾP
 # =======================================
 tong_thu_all = df[df['Loại'] == 'Thu nhập']['Số tiền (VNĐ)'].sum()
 tong_chi_all = df[df['Loại'] == 'Chi tiêu']['Số tiền (VNĐ)'].sum()
@@ -99,19 +102,21 @@ with st.sidebar:
     st.markdown("---")
     thang_loc = st.selectbox("📅 Chọn Tháng", range(1, 13), index=int(datetime.now().month-1))
     st.markdown("---")
-    st.markdown("### 🤖 Trợ lý AI (REST API)")
+    st.markdown("### 🤖 Trợ lý AI")
     chat_box = st.container(height=350, border=True)
-    if "chat" not in st.session_state: st.session_state.chat = [{"role": "assistant", "content": "Em đã đổi mạng kết nối! Boss hỏi thử xem em có trả lời không nhé!"}]
+    if "chat" not in st.session_state: st.session_state.chat = [{"role": "assistant", "content": "Khóa AQ đã gắn xong! Boss hỏi em đi!"}]
     for msg in st.session_state.chat: chat_box.chat_message(msg["role"]).write(msg["content"])
     
     if q := st.chat_input("Hỏi AI..."):
         st.session_state.chat.append({"role": "user", "content": q})
         chat_box.chat_message("user").write(q)
-        # GỌI HÀM API TRỰC TIẾP
-        lenh = f"Dữ liệu: Thu {tong_thu_all}, Chi {tong_chi_all}, Dư {so_du_all}. Hãy trả lời: {q}"
-        ans_text = hoi_ai_gemini(lenh)
-        chat_box.chat_message("assistant").write(ans_text)
-        st.session_state.chat.append({"role": "assistant", "content": ans_text})
+        
+        # Gọi thẳng lên server Google bằng mã AQ
+        lenh_ai = f"Dữ liệu của Boss: Thu {tong_thu_all}, Chi {tong_chi_all}, Dư {so_du_all}. Hãy trả lời: {q}"
+        cau_tra_loi = hoi_ai_gemini(lenh_ai)
+        
+        chat_box.chat_message("assistant").write(cau_tra_loi)
+        st.session_state.chat.append({"role": "assistant", "content": cau_tra_loi})
 
 # =======================================
 # 6. MÀN HÌNH CHÍNH & TABS CHỨC NĂNG
@@ -127,7 +132,7 @@ c2.metric("🟢 DÒNG TIỀN VÀO", f"{tong_thu:,.0f} ₫")
 c3.metric("🔴 DÒNG TIỀN RA", f"{tong_chi:,.0f} ₫")
 st.markdown("---")
 
-tab1, tab2, tab3, tab4, tab5 = st.tabs(["📝 GHI CHÉP", "💣 NGÂN SÁCH", "📈 AI PHÂN TÍCH", "🧮 TIỆN ÍCH", "📋 SỔ EXCEL"])
+tab1, tab2, tab3, tab4, tab5 = st.tabs(["📝 GHI CHÉP", "💣 NGÂN SÁCH", "📈 AI BÓC PHỐT", "🧮 TIỆN ÍCH", "📋 SỔ EXCEL"])
 
 # --- TAB 1: NHẬP LIỆU ---
 with tab1:
@@ -175,17 +180,16 @@ with tab2:
         </script>
         """, height=120)
 
-# --- TAB 3: AI BÓC PHỐT TRỰC TIẾP ---
+# --- TAB 3: AI BÓC PHỐT ---
 with tab3:
     df_chi = df_loc[df_loc['Loại'] == 'Chi tiêu']
     if not df_chi.empty:
         st.bar_chart(df_chi.groupby('Danh mục')['Số tiền (VNĐ)'].sum().reset_index(), x='Danh mục', y='Số tiền (VNĐ)', color="#00C9FF")
     
-    if st.button("🔥 Soi mói thói quen xài tiền!", type="primary", use_container_width=True):
+    if st.button("🔥 AI soi mói thói quen xài tiền!", type="primary", use_container_width=True):
         with st.spinner("AI đang check dữ liệu..."):
             ds_chi = df_chi[['Danh mục', 'Số tiền (VNĐ)']].to_string()
             lenh = f"Boss đã tiêu: {ds_chi}. Hãy đóng vai một chuyên gia tài chính đanh đá, châm biếm thói tiêu hoang này. Cấm khen!"
-            # GỌI HÀM API TRỰC TIẾP
             ket_qua = hoi_ai_gemini(lenh)
             st.error(ket_qua)
 
@@ -202,4 +206,5 @@ with tab5:
     df_da_sua = st.data_editor(df_hien_thi, num_rows="dynamic", use_container_width=True, key="excel_edit")
     if st.button("💾 LƯU THAY ĐỔI", use_container_width=True, type="primary"):
         df_da_sua.to_csv(FILE_DATA, index=False)
+        st.success("Đã lưu vào cơ sở dữ liệu gốc!")
         st.rerun()
