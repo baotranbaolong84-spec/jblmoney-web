@@ -7,14 +7,18 @@ from datetime import datetime
 import streamlit.components.v1 as components
 
 # =======================================
-# 1. CẤU HÌNH API AI GEMINI
+# 1. CẤU HÌNH TRANG WEB (BẮT BUỘC ĐẶT ĐẦU TIÊN)
 # =======================================
-# ⚠️ BOSS DÁN MÃ "AIza..." VÀO ĐÂY NHÉ:
-genai.configure(api_key="AQ.Ab8RN6I-0Iv3yI3lz0K_TBT9W1Z09NIeHUvDdR5O_RKpr5iMaQ")
-bo_nao_ai = genai.GenerativeModel('gemini-2.5-flash')
+st.set_page_config(page_title="JBLMONEY Ultimate", page_icon="💎", layout="centered")
 
 # =======================================
-# 2. CẤU HÌNH KHO DỮ LIỆU & ẢNH HÓA ĐƠN
+# 2. CẤU HÌNH API AI GEMINI (ĐÃ GẮN SẴN MÃ CHUẨN CỦA BOSS)
+# =======================================
+genai.configure(api_key="AQ.Ab8RN6I-0Iv3yI3lz0K_TBT9W1Z09NIeHUvDdR5O_RKpr5iMaQ")
+bo_nao_ai = genai.GenerativeModel('gemini-1.5-flash')
+
+# =======================================
+# 3. CẤU HÌNH KHO DỮ LIỆU & ẢNH HÓA ĐƠN
 # =======================================
 FILE_DATA = 'so_thu_chi.csv'
 THU_MUC_ANH = 'Hoa_Don'
@@ -23,70 +27,55 @@ if not os.path.exists(THU_MUC_ANH):
 
 def tai_du_lieu():
     if os.path.exists(FILE_DATA):
-        df = pd.read_csv(FILE_DATA)
-        if 'Ví' not in df.columns: df['Ví'] = 'Tiền mặt'
-        if 'Hóa đơn' not in df.columns: df['Hóa đơn'] = 'Không có'
-        return df
+        try:
+            df = pd.read_csv(FILE_DATA)
+            if 'Ví' not in df.columns: df['Ví'] = 'Tiền mặt'
+            if 'Hóa đơn' not in df.columns: df['Hóa đơn'] = 'Không có'
+            return df
+        except:
+            pass
     return pd.DataFrame(columns=['Ngày', 'Loại', 'Danh mục', 'Ví', 'Số tiền (VNĐ)', 'Ghi chú', 'Hóa đơn'])
 
 df = tai_du_lieu()
-df['Tháng'] = pd.to_datetime(df['Ngày']).dt.month
-
-# ĐỔI THÀNH CENTERED ĐỂ HIỂN THỊ CÂN ĐỐI TRÊN ĐIỆN THOẠI
-st.set_page_config(page_title="JBLMONEY Ultimate", page_icon="💎", layout="centered")
+# Chuẩn hóa dữ liệu an toàn tránh lỗi tính toán
+df['Số tiền (VNĐ)'] = pd.to_numeric(df['Số tiền (VNĐ)'], errors='coerce').fillna(0)
+df['Tháng'] = pd.to_datetime(df['Ngày'], errors='coerce').dt.month
+df['Tháng'] = df['Tháng'].fillna(datetime.now().month).astype(int)
 
 # =======================================
-# 3. CSS TỐI ƯU HÓA RESPONSIVE CHO ĐIỆN THOẠI
+# 4. CSS TÂN TRANG GIAO DIỆN & RESPONSIVE ĐIỆN THOẠI
 # =======================================
 st.markdown("""
 <style>
-    /* 1. Giao diện mặc định (Máy tính) */
+    /* Định dạng các khối hiển thị tiền tệ dạng Hộp nổi */
     div[data-testid="metric-container"] {
-        background-color: #1E1E2E; border-radius: 15px; padding: 20px;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.3); border: 1px solid #333;
+        background-color: #1E1E2E !important; border-radius: 15px !important; padding: 20px !important;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.3) !important; border: 1px solid #333 !important;
     }
+    /* Đổi màu Nút bấm thành gradient chuyên nghiệp */
     div.stButton > button {
         background: linear-gradient(90deg, #00C9FF 0%, #92FE9D 100%) !important;
         color: black !important; font-weight: bold !important; border-radius: 8px !important; border: none !important;
     }
-    div.stButton > button:hover { opacity: 0.8; }
+    div.stButton > button:hover { opacity: 0.8 !important; }
+    /* Nút Đăng xuất màu đỏ */
     div[data-testid="stSidebar"] div.stButton > button {
         background: linear-gradient(90deg, #ff416c 0%, #ff4b2b 100%) !important; color: white !important;
     }
 
-    /* 2. MA THUẬT TỰ ĐỘNG THU NHỎ KHI LÊN ĐIỆN THOẠI (Mobile Responsive) */
+    /* Tự động thu nhỏ cân đối khi mở trên điện thoại */
     @media (max-width: 768px) {
-        /* Thu nhỏ hộp số liệu (Metrics) */
-        div[data-testid="metric-container"] {
-            padding: 10px !important;
-            margin-bottom: -15px !important; /* Ép các hộp gần nhau hơn */
-        }
-        /* Thu nhỏ chữ tiêu đề trong hộp */
-        div[data-testid="metric-container"] label {
-            font-size: 13px !important;
-        }
-        /* Thu nhỏ số tiền hiển thị */
-        div[data-testid="metric-container"] div[data-testid="stMetricValue"] {
-            font-size: 22px !important; 
-        }
-        /* Căn giữa tiêu đề trang */
-        h1 {
-            font-size: 24px !important;
-            text-align: center !important;
-            margin-top: -20px !important;
-        }
-        /* Chỉnh lại Tab trên điện thoại cho gọn */
-        div[data-testid="stTabs"] button {
-            font-size: 13px !important;
-            padding-left: 10px !important;
-            padding-right: 10px !important;
-        }
+        div[data-testid="metric-container"] { padding: 10px !important; margin-bottom: 10px !important; }
+        div[data-testid="metric-container"] label { font-size: 12px !important; }
+        div[data-testid="metric-container"] div[data-testid="stMetricValue"] { font-size: 20px !important; }
+        h1 { font-size: 22px !important; text-align: center !important; }
+        div[data-testid="stTabs"] button { font-size: 12px !important; padding: 5px !important; }
     }
 </style>
 """, unsafe_allow_html=True)
 
 # =======================================
-# 4. HỆ THỐNG ĐĂNG NHẬP BẢO MẬT
+# 5. HỆ THỐNG ĐĂNG NHẬP BẢO MẬT
 # =======================================
 if 'dang_nhap' not in st.session_state: st.session_state.dang_nhap = False
 if not st.session_state.dang_nhap:
@@ -102,10 +91,10 @@ if not st.session_state.dang_nhap:
     st.stop()
 
 # =======================================
-# 5. SIDEBAR ĐIỀU KHIỂN & TRỢ LÝ AI
+# 6. SIDEBAR ĐIỀU KHIỂN & TRỢ LÝ AI GỐC
 # =======================================
-tong_thu_all = df[df['Loại'] == 'Thu nhập']['Số tiền (VNĐ)'].sum() if not df.empty else 0
-tong_chi_all = df[df['Loại'] == 'Chi tiêu']['Số tiền (VNĐ)'].sum() if not df.empty else 0
+tong_thu_all = df[df['Loại'] == 'Thu nhập']['Số tiền (VNĐ)'].sum()
+tong_chi_all = df[df['Loại'] == 'Chi tiêu']['Số tiền (VNĐ)'].sum()
 so_du_all = tong_thu_all - tong_chi_all
 
 with st.sidebar:
@@ -114,7 +103,7 @@ with st.sidebar:
         st.session_state.dang_nhap = False; st.rerun()
     
     st.markdown("---")
-    thang_loc = st.selectbox("📅 Chọn Tháng Xem Báo Cáo", range(1, 13), index=datetime.now().month-1)
+    thang_loc = st.selectbox("📅 Chọn Tháng Xem Báo Cáo", range(1, 13), index=int(datetime.now().month-1))
     
     st.markdown("---")
     st.markdown("### 🤖 Trợ lý AI Cấp cao")
@@ -130,25 +119,24 @@ with st.sidebar:
             chat_box.chat_message("assistant").write(ans.text)
             st.session_state.chat.append({"role": "assistant", "content": ans.text})
         except Exception as e: 
-            st.error(f"Lỗi AI: {e}") # Bắt lỗi AI rõ ràng để dễ sửa
+            st.error(f"Lỗi AI: {e}")
 
 # =======================================
-# 6. MÀN HÌNH CHÍNH & KPI SỐ LIỆU
+# 7. MÀN HÌNH CHÍNH & KPI SỐ LIỆU
 # =======================================
 df_loc = df[df['Tháng'] == thang_loc]
-tong_thu = df_loc[df_loc['Loại'] == 'Thu nhập']['Số tiền (VNĐ)'].sum() if not df_loc.empty else 0
-tong_chi = df_loc[df_loc['Loại'] == 'Chi tiêu']['Số tiền (VNĐ)'].sum() if not df_loc.empty else 0
+tong_thu = df_loc[df_loc['Loại'] == 'Thu nhập']['Số tiền (VNĐ)'].sum()
+tong_chi = df_loc[df_loc['Loại'] == 'Chi tiêu']['Số tiền (VNĐ)'].sum()
 
-st.markdown(f"<h1>📊 Báo cáo Tháng {thang_loc}</h1>", unsafe_allow_html=True)
-
-# Hiển thị 3 hộp số liệu
+st.markdown(f"<h1>📊 Báo cáo Tài Chính Doanh Nghiệp (Tháng {thang_loc})</h1>", unsafe_allow_html=True)
 c1, c2, c3 = st.columns(3)
 c1.metric("💰 SỐ DƯ TÀI KHOẢN", f"{tong_thu - tong_chi:,.0f} ₫", "An toàn" if (tong_thu - tong_chi) >= 0 else "Báo động")
 c2.metric("🟢 DÒNG TIỀN VÀO (THU)", f"{tong_thu:,.0f} ₫")
 c3.metric("🔴 DÒNG TIỀN RA (CHI)", f"{tong_chi:,.0f} ₫")
 st.markdown("---")
 
-tab1, tab2, tab3, tab4, tab5 = st.tabs(["📝 GHI CHÉP", "💣 NGÂN SÁCH", "📈 AI PHÂN TÍCH", "🧮 TIỆN ÍCH", "📋 SỔ EXCEL"])
+# Các Tab tính năng rộng rãi, trực quan
+tab1, tab2, tab3, tab4, tab5 = st.tabs(["📝 GHI CHÉP GIAO DỊCH", "💣 NGÂN SÁCH RỦI RO", "📈 PHÂN TÍCH & AI", "🧮 TIỆN ÍCH", "📋 SỔ CÁI EXCEL"])
 
 # --- TAB 1: NHẬP LIỆU ---
 with tab1:
@@ -158,7 +146,7 @@ with tab1:
         with col1:
             loai = st.radio("Loại", ["Chi tiêu", "Thu nhập"], horizontal=True)
             ngay = st.date_input("Ngày")
-            danh_muc = st.text_input("Danh mục (Ăn uống, Di chuyển...)")
+            danh_muc = st.text_input("Danh mục (Ăn uống, Di chuyển, Lương...)")
         with col2:
             tien = st.number_input("Số tiền (VNĐ)", min_value=0, step=50000)
             vi_tien = st.selectbox("Ví sử dụng", ["Tiền mặt", "Ngân hàng", "Thẻ Tín dụng"])
@@ -189,14 +177,15 @@ with tab2:
         st.error("🚨 CẢNH BÁO ĐỎ: BẠN ĐÃ TIÊU VƯỢT HẠN MỨC CHO PHÉP!")
         countdown_html = """
         <div style="text-align: center; background-color: #ff4b4b; padding: 20px; border-radius: 10px; color: white;">
-            <h1 style="margin:0; font-size: 24px;">💣 BOM NỔ SAU: <span id="timer">15</span>S</h1>
+            <h1 style="margin:0; font-size: 24px;">💣 BOM SẼ NỔ SAU: <span id="timer">15</span> GIÂY</h1>
+            <p>Hãy dừng tiêu xài trước khi tài khoản bốc cháy!</p>
         </div>
         <script>
             var timeLeft = 15;
             var timerId = setInterval(countdown, 1000);
             function countdown() {
-                if (timeLeft == -1) {
-                    clearTimeout(timerId);
+                if (timeLeft <= 0) {
+                    clearInterval(timerId);
                     document.getElementById('timer').innerHTML = "BÙM!!! BẠN ĐÃ PHÁ SẢN!";
                     document.body.style.backgroundColor = "#5a0000";
                 } else {
@@ -206,15 +195,17 @@ with tab2:
             }
         </script>
         """
-        components.html(countdown_html, height=120)
+        components.html(countdown_html, height=150)
         if st.button("🛑 TÔI XIN HỨA SẼ THẮT LƯNG BUỘC BỤNG!"):
             st.success("Hệ thống đã ghi nhận lời hứa!")
 
 # --- TAB 3: PHÂN TÍCH BIỂU ĐỒ & BÓC PHỐT ---
 with tab3:
     st.subheader("📈 Biểu đồ cơ cấu chi tiêu")
-    if not df_loc[df_loc['Loại'] == 'Chi tiêu'].empty:
-        st.bar_chart(df_loc[df_loc['Loại'] == 'Chi tiêu'].groupby('Danh mục')['Số tiền (VNĐ)'].sum().reset_index(), x='Danh mục', y='Số tiền (VNĐ)', color="#00C9FF")
+    df_chi = df_loc[df_loc['Loại'] == 'Chi tiêu']
+    if not df_chi.empty:
+        chart_data = df_chi.groupby('Danh mục')['Số tiền (VNĐ)'].sum().reset_index()
+        st.bar_chart(chart_data, x='Danh mục', y='Số tiền (VNĐ)', color="#00C9FF")
     else: st.info("Chưa có dữ liệu chi tiêu tháng này.")
         
     st.markdown("---")
@@ -222,33 +213,34 @@ with tab3:
     if st.button("🔥 Soi mói thói quen xài tiền của tôi!", type="primary", use_container_width=True):
         with st.spinner("Đang soi sổ sách..."):
             try:
-                ds_chi = df_loc[df_loc['Loại'] == 'Chi tiêu'][['Danh mục', 'Số tiền (VNĐ)']].to_string()
+                ds_chi = df_chi[['Danh mục', 'Số tiền (VNĐ)']].to_string()
                 lenh = f"Boss đã tiêu: {ds_chi}. Hãy đóng vai một chuyên gia tài chính đanh đá, dùng từ ngữ mỉa mai, châm biếm thói tiêu hoang này cho vui. Cấm khen!"
                 phot = bo_nao_ai.generate_content(lenh)
                 st.error(phot.text)
-            except: st.warning("Ví sạch quá chưa có gì để bóc phốt Boss ơi!")
+            except Exception as e:
+                st.warning(f"Ví sạch hoặc AI đang bận: {e}")
 
 # --- TAB 4: CHIA BILL & ỐNG HEO ---
 with tab4:
-    st.subheader("🍻 Máy Tính Chia Bill")
+    st.subheader("🍻 Máy Tính Chia Bill Thần Tốc")
     col_b1, col_b2 = st.columns(2)
-    tong_bill = col_b1.number_input("Tổng hóa đơn (VNĐ):", min_value=0, step=20000)
+    tong_bill = col_b1.number_input("Tổng tiền trên hóa đơn (VNĐ):", min_value=0, step=20000)
     so_nguoi = col_b2.number_input("Số người chia tiền:", min_value=1, step=1, value=1)
     if tong_bill > 0: 
         st.success(f"👉 Campuchia đều: **{tong_bill / so_nguoi:,.0f} ₫ / người**")
     
     st.markdown("---")
-    st.subheader("🐷 Ống Heo Tích Lũy")
-    tien_muc_tieu = st.number_input("Mục tiêu cần đạt (VNĐ):", min_value=1, value=30000000, step=1000000)
+    st.subheader("🐷 Ống Heo Tích Lũy Mục Tiêu")
+    tien_muc_tieu = st.number_input("Số tiền cần đạt được (VNĐ):", min_value=1, value=30000000, step=1000000)
     tien_tiet_kiem = max(float(tong_thu_all - tong_chi_all), 0.0) 
-    phan_tram = (tien_tiet_kiem / float(tien_muc_tieu)) * 100.0
-    st.progress(float(max(0.0, min(phan_tram / 100.0, 1.0))))
-    st.write(f"Đã gom: **{tien_tiet_kiem:,.0f} ₫** / **{tien_muc_tieu:,.0f} ₫** (Đạt {phan_tram:.1f}%)")
+    phan_tram_pig = (tien_tiet_kiem / float(tien_muc_tieu)) * 100.0
+    st.progress(float(max(0.0, min(phan_tram_pig / 100.0, 1.0))))
+    st.write(f"Đã gom: **{tien_tiet_kiem:,.0f} đ** / **{tien_muc_tieu:,.0f} đ** (Đạt {phan_tram_pig:.1f}%)")
 
 # --- TAB 5: SỔ CÁI EXCEL ---
 with tab5:
     st.subheader("📋 Bảng quản lý dữ liệu gốc")
-    st.info("Nhấp đúp vào ô để sửa. Chọn ô đầu dòng bấm Delete để xóa dòng.")
+    st.info("Nhấp đúp vào ô để sửa nhanh số/chữ. Chọn ô vuông đầu dòng bấm phím Delete để xóa dòng.")
     df_hien_thi = df.copy().drop(columns=['Tháng'], errors='ignore')
     df_da_sua = st.data_editor(df_hien_thi, num_rows="dynamic", use_container_width=True)
     if st.button("💾 LƯU MỌI THAY ĐỔI VÀO SỔ CÁI", use_container_width=True, type="primary"):
