@@ -10,7 +10,7 @@ import streamlit.components.v1 as components
 # 1. CẤU HÌNH API AI GEMINI
 # =======================================
 # ⚠️ BOSS NHỚ DÁN LẠI MÃ KHÓA "AQ..." VÀO ĐÂY NHÉ:
-genai.configure(api_key="AQ.Ab8RN6JVw2ktSy2bLkox82Jx_Dm0Wl_16vZWz7dEGoAQ5S0ZHA")
+genai.configure(api_key="AQ.Ab8RN6I-0Iv3yI3lz0K_TBT9W1Z09NIeHUvDdR50_RKpr5iMaQ")
 bo_nao_ai = genai.GenerativeModel('gemini-2.5-flash')
 
 # =======================================
