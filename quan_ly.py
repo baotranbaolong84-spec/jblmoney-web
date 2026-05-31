@@ -15,8 +15,8 @@ bo_nao_ai = genai.GenerativeModel('gemini-2.5-flash')
 # =======================================
 # 2. CẤU HÌNH KHO DỮ LIỆU & ẢNH HÓA ĐƠN
 # =======================================
-FILE_DATA = 'C:/Users/tranb/OneDrive/so_thu_chi.csv'
-THU_MUC_ANH = 'C:/Users/tranb/OneDrive/Hoa_Don'
+FILE_DATA = 'so_thu_chi.csv'
+THU_MUC_ANH = 'Hoa_Don'
 
 # Tự động tạo thư mục nếu chưa có
 if not os.path.exists(THU_MUC_ANH): 
