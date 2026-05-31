@@ -14,7 +14,7 @@ st.set_page_config(page_title="JBLMONEY Ultimate", page_icon="💎", layout="cen
 # =======================================
 # 2. CẤU HÌNH API AI GEMINI (ĐÃ GẮN SẴN MÃ CHUẨN CỦA BOSS)
 # =======================================
-genai.configure(api_key="AQ.Ab8RN6I-0Iv3yI3lz0K_TBT9W1Z09NIeHUvDdR5O_RKpr5iMaQ")
+genai.configure(api_key="AQ.Ab8RN6I-0Iv3yI3lz0K_TBT9W1Z09NIeHUvDdR50_RKpr5iMaQ")
 bo_nao_ai = genai.GenerativeModel('gemini-1.5-flash')
 
 # =======================================
