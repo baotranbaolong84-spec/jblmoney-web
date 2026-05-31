@@ -12,17 +12,17 @@ import requests
 st.set_page_config(page_title="JBLMONEY Ultimate", page_icon="💎", layout="centered")
 
 # =======================================
-# 2. AI VƯỢT RÀO (ÉP MÁY CHỦ NHẬN MÃ AQ...)
+# 2. AI VƯỢT RÀO (ĐÃ ĐỔI TÊN AI THÀNH GEMINI-PRO CHUẨN)
 # =======================================
-# ⚠️ BOSS DÁN MÃ AQ.Ab8RN... VÀO GIỮA HAI DẤU NGOẶC KÉP Ở DÒNG DƯỚI NHÉ:
-API_KEY_CUA_BOSS = "AQ.Ab8RN6L18JnztTs0ml5Qdks6FT2D-5eBLX-oFq-Hiy9Ca-syww"
+# ⚠️ BOSS DÁN MÃ AQ... VÀO GIỮA HAI DẤU NGOẶC KÉP Ở DÒNG DƯỚI:
+API_KEY_CUA_BOSS = "DÁN_MÃ_AQ_CỦA_BOSS_VÀO_ĐÂY"
 
 def hoi_ai_gemini(cau_hoi):
-    url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"
-    # Ép Google phải hiểu đây là API Key xịn thông qua x-goog-api-key
+    # Đã sửa tên model từ gemini-1.5-flash thành gemini-pro để Google không bị ngáo nữa
+    url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent"
     headers = {
         'Content-Type': 'application/json',
-        'x-goog-api-key': API_KEY_CUA_BOSS
+        'x-goog-api-key': "AQ.Ab8RN6L18JnztTs0ml5Qdks6FT2D-5eBLX-oFq-Hiy9Ca-syww"
     }
     data = {"contents": [{"parts": [{"text": cau_hoi}]}]}
     try:
@@ -104,15 +104,14 @@ with st.sidebar:
     st.markdown("---")
     st.markdown("### 🤖 Trợ lý AI")
     chat_box = st.container(height=350, border=True)
-    if "chat" not in st.session_state: st.session_state.chat = [{"role": "assistant", "content": "Khóa AQ đã gắn xong! Boss hỏi em đi!"}]
+    if "chat" not in st.session_state: st.session_state.chat = [{"role": "assistant", "content": "Cửa đã mở! Chìa đã tra! Boss hỏi em đi!"}]
     for msg in st.session_state.chat: chat_box.chat_message(msg["role"]).write(msg["content"])
     
     if q := st.chat_input("Hỏi AI..."):
         st.session_state.chat.append({"role": "user", "content": q})
         chat_box.chat_message("user").write(q)
         
-        # Gọi thẳng lên server Google bằng mã AQ
-        lenh_ai = f"Dữ liệu của Boss: Thu {tong_thu_all}, Chi {tong_chi_all}, Dư {so_du_all}. Hãy trả lời: {q}"
+        lenh_ai = f"Dữ liệu của Boss: Thu {tong_thu_all}, Chi {tong_chi_all}, Dư {so_du_all}. Hãy trả lời ngắn gọn: {q}"
         cau_tra_loi = hoi_ai_gemini(lenh_ai)
         
         chat_box.chat_message("assistant").write(cau_tra_loi)
