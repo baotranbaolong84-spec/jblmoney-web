@@ -4,207 +4,285 @@ import os
 import random
 from datetime import datetime
 
-# =======================================
-# 1. CẤU HÌNH TRANG & GIAO DIỆN CHUYÊN NGHIỆP
-# =======================================
-st.set_page_config(page_title="Boss Super Workspace", page_icon="⚡", layout="wide")
+# ==========================================
+# 1. CẤU HÌNH GIAO DIỆN CHUYÊN NGHIỆP (UI/UX)
+# ==========================================
+st.set_page_config(page_title="Boss Life OS", page_icon="⚡", layout="wide", initial_sidebar_state="expanded")
 
+# Nhúng CSS custom để ép giao diện thành App xịn (Dark Mode, Bo góc, Nút nổi)
 st.markdown("""
 <style>
-    /* Ẩn menu mặc định của Streamlit cho giống web thật */
+    /* Ẩn menu mặc định của Streamlit */
     #MainMenu {visibility: hidden;}
-    footer {visibility: hidden;}
     header {visibility: hidden;}
+    footer {visibility: hidden;}
     
-    /* Thiết kế thẻ Card sang trọng */
-    .st-emotion-cache-1r6slb0 { background-color: #1E1E2E; border-radius: 15px; padding: 20px; border: 1px solid #333; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
+    /* Làm đẹp nút bấm toàn hệ thống */
+    div.stButton > button {
+        background: linear-gradient(135deg, #2b5876 0%, #4e4376 100%);
+        color: white; font-weight: bold; border-radius: 12px;
+        border: none; padding: 10px 24px; transition: all 0.3s ease;
+    }
+    div.stButton > button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+        background: linear-gradient(135deg, #00C9FF 0%, #92FE9D 100%);
+        color: #000;
+    }
     
-    /* Làm đẹp các nút bấm */
-    div.stButton > button { background: linear-gradient(135deg, #6e8efb, #a777e3); color: white; font-weight: bold; border-radius: 8px; border: none; transition: 0.3s; }
-    div.stButton > button:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+    /* Form nhập liệu */
+    [data-testid="stForm"] {
+        border-radius: 15px; border: 1px solid #444; background-color: #1E1E2E; padding: 20px;
+    }
     
-    /* Màu sắc tiêu đề */
-    h1 { color: #ffffff; font-weight: 800; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; text-transform: uppercase; letter-spacing: 2px;}
-    h2, h3 { color: #a777e3; font-weight: 600; }
+    /* Các con số thống kê (Metrics) */
+    [data-testid="stMetricValue"] { font-size: 2.5rem; color: #00C9FF; font-weight: 800; }
+    
+    /* Thiết kế thẻ Card Custom bằng HTML */
+    .custom-card {
+        background-color: #252535; border-radius: 15px; padding: 20px; 
+        margin-bottom: 15px; border-left: 5px solid #00C9FF;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.2); transition: 0.3s;
+    }
+    .custom-card:hover { transform: translateX(5px); }
 </style>
 """, unsafe_allow_html=True)
 
-# =======================================
-# 2. HỆ THỐNG LƯU TRỮ CSV
-# =======================================
-FILES = {'gym': 'gym_data.csv', 'eng': 'eng_data.csv', 'fashion': 'fashion_data.csv', 'movie': 'movie_data.csv'}
+# ==========================================
+# 2. HỆ THỐNG CƠ SỞ DỮ LIỆU (DATA ENGINE)
+# ==========================================
+# Tự động tạo file CSV nếu chưa có
+FILE_GYM = 'gym_tracker.csv'
+FILE_ENG = 'eng_vocab.csv'
+FILE_FASH = 'fashion_closet.csv'
+FILE_MOV = 'movie_diary.csv'
 
-def load_data(file_name, columns):
+def load_db(file_name, columns):
     if os.path.exists(file_name):
         try: return pd.read_csv(file_name)
         except: pass
     return pd.DataFrame(columns=columns)
 
-def save_data(df, file_name):
+def save_db(df, file_name):
     df.to_csv(file_name, index=False)
 
-df_gym = load_data(FILES['gym'], ['Ngày', 'Nhóm cơ / Môn', 'Thành tích', 'Ghi chú'])
-df_eng = load_data(FILES['eng'], ['Ngày', 'Từ vựng', 'Nghĩa', 'Ví dụ', 'Đã thuộc'])
-df_fashion = load_data(FILES['fashion'], ['Tên món đồ', 'Thương hiệu', 'Loại', 'Màu sắc'])
-df_movie = load_data(FILES['movie'], ['Ngày xem', 'Tên phim', 'Rạp', 'Điểm (1-10)'])
+# Tải toàn bộ dữ liệu khi mở web
+df_gym = load_db(FILE_GYM, ['Ngày', 'Môn tập', 'Bài tập/Thành tích', 'Ghi chú'])
+df_eng = load_db(FILE_ENG, ['Từ vựng', 'Nghĩa', 'Ví dụ', 'Ngày học'])
+df_fash = load_db(FILE_FASH, ['Tên đồ', 'Loại', 'Thương hiệu', 'Màu sắc'])
+df_mov = load_db(FILE_MOV, ['Tên phim', 'Rạp', 'Điểm', 'Ngày xem'])
 
-# =======================================
-# 3. SIDEBAR - THÔNG TIN CÁ NHÂN & BẢO TRÌ AI
-# =======================================
+# ==========================================
+# 3. THANH ĐIỀU HƯỚNG (SIDEBAR NAVIGATION)
+# ==========================================
 with st.sidebar:
     st.image("https://cdn-icons-png.flaticon.com/512/3135/3135715.png", width=100)
-    st.markdown("## 👑 BẢNG ĐIỀU KHIỂN")
+    st.markdown("## ⚡ LIFE OS")
+    st.caption("Phiên bản V6 - Không cần API Key")
     st.markdown("---")
     
-    # Khu vực AI đã được đưa vào bảo trì
-    st.warning("🚧 TRỢ LÝ AI ĐANG BẢO TRÌ")
-    st.caption("Hệ thống AI đang được nâng cấp. Các tính năng tự động cục bộ vẫn hoạt động bình thường 100%.")
+    menu = st.radio("ĐIỀU HƯỚNG:", 
+                    ["🏠 Bảng Điều Khiển (Dashboard)", 
+                     "💪 Hệ Thống Gym (Strong)", 
+                     "🇬🇧 Trạm Tiếng Anh (Duolingo)", 
+                     "🧢 Tủ Đồ Chất (Acloset)", 
+                     "🎬 Nhật Ký Phim (Letterboxd)"])
     
     st.markdown("---")
-    st.markdown("### 📊 Tổng quan nhanh:")
-    st.metric("💪 Tổng buổi tập", f"{len(df_gym)} buổi")
-    st.metric("📚 Từ vựng đã nạp", f"{len(df_eng)} từ")
-    st.metric("🍿 Phim đã cày", f"{len(df_movie)} bộ")
+    st.success("Tình trạng: Mạng cục bộ hoạt động 100%. Dữ liệu được lưu an toàn.")
 
-# =======================================
-# 4. GIAO DIỆN CHÍNH - MENU ĐIỀU HƯỚNG
-# =======================================
-st.title("⚡ TRUNG TÂM KIỂM SOÁT CÁ NHÂN")
+# ==========================================
+# 4. TRIỂN KHAI CÁC TRANG CHỨC NĂNG
+# ==========================================
 
-# Sử dụng Tab như Menu Bar của Website
-t_gym, t_eng, t_fash, t_mov = st.tabs(["💪 GYM & FITNESS", "📚 ENGLISH ARENA", "🧢 STREETWEAR WARDROBE", "🎬 MOVIE STATION"])
+# ------------------------------------------
+# TRANG 1: DASHBOARD (BẢNG TỔNG QUAN)
+# ------------------------------------------
+if menu == "🏠 Bảng Điều Khiển (Dashboard)":
+    st.title("Hi Boss! Chúc một ngày năng suất! 👋")
+    st.markdown("Dưới đây là báo cáo tổng hợp từ các trạm dữ liệu của Boss:")
+    
+    c1, c2, c3, c4 = st.columns(4)
+    c1.metric("🏋️ Số buổi đã tập", f"{len(df_gym['Ngày'].unique()) if not df_gym.empty else 0} Ngày")
+    c2.metric("📚 Kho từ vựng", f"{len(df_eng)} Từ")
+    c3.metric("🧢 Tủ đồ hiện tại", f"{len(df_fash)} Món")
+    c4.metric("🎬 Số phim đã cày", f"{len(df_mov)} Bộ")
+    
+    st.markdown("---")
+    st.markdown("### 🚀 Hoạt động mới nhất")
+    col_a, col_b = st.columns(2)
+    with col_a:
+        st.info("**Từ vựng mới nhất:** " + (df_eng.iloc[-1]['Từ vựng'] if not df_eng.empty else "Chưa có"))
+    with col_b:
+        st.warning("**Phim mới xem:** " + (df_mov.iloc[-1]['Tên phim'] if not df_mov.empty else "Chưa có"))
 
-# ---------------------------------------
-# KHU 1: GYM & FITNESS (THÊM CÔNG CỤ BMI)
-# ---------------------------------------
-with t_gym:
-    c1, c2 = st.columns([1, 2])
-    with c1:
-        st.subheader("Báo cáo Cơ Thể")
-        with st.form("bmi_calc"):
-            cao = st.number_input("Chiều cao (cm)", min_value=100, max_value=250, value=170)
-            nang = st.number_input("Cân nặng (kg)", min_value=30, max_value=200, value=65)
-            if st.form_submit_button("Tính BMI", use_container_width=True):
-                bmi = nang / ((cao/100)**2)
-                st.info(f"Chỉ số BMI của bạn: **{bmi:.1f}**")
-                if bmi < 18.5: st.warning("Hơi gầy, ráng ăn nhiều lên Boss!")
-                elif 18.5 <= bmi < 25: st.success("Body chuẩn đét!")
-                else: st.error("Đang thừa mỡ rồi, cardio gấp!")
-
-    with c2:
-        st.subheader("Thêm Buổi Tập Mới")
-        with st.form("form_gym", clear_on_submit=True):
+# ------------------------------------------
+# TRANG 2: GYM TRACKER (Giống Hevy/Strong)
+# ------------------------------------------
+elif menu == "💪 Hệ Thống Gym (Strong)":
+    st.title("💪 GYM & FITNESS TRACKER")
+    
+    # Khu vực ẩn để nhập dữ liệu (Tránh làm rối mắt)
+    with st.expander("➕ THÊM BÀI TẬP / BUỔI TẬP MỚI", expanded=False):
+        with st.form("gym_form", clear_on_submit=True):
             col1, col2 = st.columns(2)
             ngay_tap = col1.date_input("Ngày tập")
-            mon_tap = col2.selectbox("Nhóm cơ / Môn", ["Ngực - Tay sau", "Lưng - Tay trước", "Chân - Mông - Bụng", "Cardio/Bơi lội", "Khác"])
-            thanh_tich = st.text_input("Ghi nhận (VD: Đẩy ngực 60kg - 4 hiệp, Bơi 2km)")
+            mon_tap = col2.selectbox("Nhóm cơ / Môn", ["Ngực", "Lưng - Xô", "Chân - Mông", "Vai - Tay", "Cardio/Bơi lội"])
+            thanh_tich = st.text_input("Chi tiết (VD: Đẩy ngực 60kg - 4 hiệp x 10 reps)")
+            ghi_chu = st.text_area("Cảm nhận buổi tập")
+            
             if st.form_submit_button("LƯU KẾT QUẢ", use_container_width=True):
-                moi = pd.DataFrame([{'Ngày': str(ngay_tap), 'Nhóm cơ / Môn': mon_tap, 'Thành tích': thanh_tich, 'Ghi chú': ''}])
+                moi = pd.DataFrame([{'Ngày': str(ngay_tap), 'Môn tập': mon_tap, 'Bài tập/Thành tích': thanh_tich, 'Ghi chú': ghi_chu}])
                 df_gym = pd.concat([df_gym, moi], ignore_index=True)
-                save_data(df_gym, FILES['gym'])
-                st.success("Đã ghi nhận buổi tập!")
+                save_db(df_gym, FILE_GYM)
+                st.success("💪 Lên cơ! Đã lưu buổi tập.")
                 st.rerun()
-    st.markdown("---")
-    st.dataframe(df_gym, use_container_width=True, hide_index=True)
 
-# ---------------------------------------
-# KHU 2: TIẾNG ANH (THÊM FLASHCARD ÔN TẬP)
-# ---------------------------------------
-with t_eng:
-    c1, c2 = st.columns([1, 1])
-    with c1:
-        st.subheader("Nạp Từ Mới")
-        with st.form("form_eng", clear_on_submit=True):
-            tu_vung = st.text_input("Từ vựng tiếng Anh")
-            nghia = st.text_input("Nghĩa tiếng Việt")
-            vi_du = st.text_area("Câu ví dụ")
-            if st.form_submit_button("LƯU TỪ", use_container_width=True):
-                moi = pd.DataFrame([{'Ngày': str(datetime.now().date()), 'Từ vựng': tu_vung, 'Nghĩa': nghia, 'Ví dụ': vi_du, 'Đã thuộc': 'Chưa'}])
-                df_eng = pd.concat([df_eng, moi], ignore_index=True)
-                save_data(df_eng, FILES['eng'])
-                st.success("Lưu thành công!")
-                st.rerun()
-    with c2:
-        st.subheader("Đấu Trường Kiểm Tra (Flashcard)")
-        if not df_eng.empty:
-            if st.button("🔀 Rút Ngẫu Nhiên 1 Từ", use_container_width=True):
-                tu_nga_nhien = df_eng.sample(1).iloc[0]
-                st.info(f"### Từ khóa: **{tu_nga_nhien['Từ vựng']}**")
-                with st.expander("Bấm vào đây để xem đáp án"):
-                    st.write(f"👉 **Nghĩa:** {tu_nga_nhien['Nghĩa']}")
-                    st.write(f"📝 **Ví dụ:** {tu_nga_nhien['Ví dụ']}")
-        else:
-            st.warning("Kho từ vựng trống. Hãy nhập từ mới trước!")
+    st.markdown("### 📅 Lịch sử tập luyện")
+    if df_gym.empty:
+        st.info("Chưa có dữ liệu tập luyện. Cầm tạ lên Boss ơi!")
+    else:
+        # Hiển thị dữ liệu đẹp mắt không dùng bảng mặc định
+        for i in reversed(range(len(df_gym))):
+            row = df_gym.iloc[i]
+            st.markdown(f"""
+            <div class="custom-card" style="border-left-color: #FF4B2B;">
+                <h4 style='margin:0; color: #FF4B2B;'>🔥 {row['Môn tập']} ({row['Ngày']})</h4>
+                <p style='margin:5px 0 0 0; font-size: 18px;'><b>Bài tập:</b> {row['Bài tập/Thành tích']}</p>
+                <p style='margin:0; color: #888;'><i>{row['Ghi chú']}</i></p>
+            </div>
+            """, unsafe_allow_html=True)
+
+# ------------------------------------------
+# TRANG 3: HỌC TIẾNG ANH (Giống Duolingo/Quizlet)
+# ------------------------------------------
+elif menu == "🇬🇧 Trạm Tiếng Anh (Duolingo)":
+    st.title("📚 ĐẤU TRƯỜNG TỪ VỰNG")
     
-    st.markdown("---")
-    st.dataframe(df_eng, use_container_width=True, hide_index=True)
-
-# ---------------------------------------
-# KHU 3: THỜI TRANG (THÊM TỰ ĐỘNG PHỐI ĐỒ)
-# ---------------------------------------
-with t_fash:
-    c1, c2 = st.columns([2, 1])
+    c1, c2 = st.columns([1, 1.5])
     with c1:
-        st.subheader("Nhập Hàng Vào Tủ")
-        with st.form("form_fashion", clear_on_submit=True):
+        st.markdown("### ➕ Nạp Đạn (Thêm từ mới)")
+        with st.form("eng_form", clear_on_submit=True):
+            tu_vung = st.text_input("Từ vựng (Tiếng Anh)")
+            nghia = st.text_input("Nghĩa (Tiếng Việt)")
+            vi_du = st.text_area("Câu ví dụ để nhớ lâu hơn")
+            if st.form_submit_button("LƯU VÀO NÃO", use_container_width=True):
+                if tu_vung and nghia:
+                    moi = pd.DataFrame([{'Từ vựng': tu_vung, 'Nghĩa': nghia, 'Ví dụ': vi_du, 'Ngày học': str(datetime.now().date())}])
+                    df_eng = pd.concat([df_eng, moi], ignore_index=True)
+                    save_db(df_eng, FILE_ENG)
+                    st.success(f"Đã nạp từ '{tu_vung}'!")
+                    st.rerun()
+                else:
+                    st.error("Phải nhập đủ Từ và Nghĩa!")
+
+    with c2:
+        st.markdown("### 🃏 Flashcard Kiểm Tra Trí Nhớ")
+        if df_eng.empty:
+            st.warning("Kho đạn trống. Hãy nhập từ vựng trước!")
+        else:
+            # Tạo bộ nhớ tạm (Session State) để giữ thẻ Flashcard không bị đổi liên tục
+            if 'current_word' not in st.session_state:
+                st.session_state.current_word = df_eng.sample(1).iloc[0]
+            
+            card = st.session_state.current_word
+            st.markdown(f"""
+            <div style="background-color: #1a1a24; border: 2px solid #00C9FF; border-radius: 15px; padding: 30px; text-align: center;">
+                <h2 style="color: #00C9FF; margin:0; font-size: 40px;">{card['Từ vựng']}</h2>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            st.write("")
+            with st.expander("👀 Bấm vào đây để lật thẻ xem đáp án"):
+                st.markdown(f"**👉 Nghĩa:** <span style='color:#FF4B2B; font-size:20px;'>{card['Nghĩa']}</span>", unsafe_allow_html=True)
+                st.write(f"📝 Ví dụ:")
+            
+            if st.button("🔀 Đổi từ khác", use_container_width=True):
+                st.session_state.current_word = df_eng.sample(1).iloc[0]
+                st.rerun()
+
+# ------------------------------------------
+# TRANG 4: TỦ ĐỒ THỜI TRANG (Giống Acloset)
+# ------------------------------------------
+elif menu == "🧢 Tủ Đồ Chất (Acloset)":
+    st.title("🧢 STREETWEAR WARDROBE")
+    
+    with st.expander("➕ CẤT ĐỒ MỚI VÀO TỦ", expanded=False):
+        with st.form("fash_form", clear_on_submit=True):
             col_a, col_b = st.columns(2)
-            ten_do = col_a.text_input("Tên món (Áo thun rách, Quần túi hộp...)")
-            brand = col_b.selectbox("Thương hiệu", ["Saigon Swagger", "Dirty Coins", "Tèoboki", "SWE", "Khác"])
-            loai_do = col_a.selectbox("Phân loại", ["Áo", "Quần", "Giày", "Phụ kiện"])
-            mau_sac = col_b.text_input("Màu chủ đạo")
+            ten_do = col_a.text_input("Tên món (VD: Áo Hoodie, Quần Cargo)")
+            loai = col_b.selectbox("Phân loại", ["Áo", "Quần", "Giày", "Phụ kiện (Mũ, Túi)"])
+            brand = col_a.selectbox("Thương hiệu", ["Dirty Coins", "Saigon Swagger", "SWE", "Nike", "Khác"])
+            mau = col_b.text_input("Màu sắc chính")
+            
             if st.form_submit_button("CẤT VÀO TỦ", use_container_width=True):
-                moi = pd.DataFrame([{'Tên món đồ': ten_do, 'Thương hiệu': brand, 'Loại': loai_do, 'Màu sắc': mau_sac}])
-                df_fashion = pd.concat([df_fashion, moi], ignore_index=True)
-                save_data(df_fashion, FILES['fashion'])
+                moi = pd.DataFrame([{'Tên đồ': ten_do, 'Loại': loai, 'Thương hiệu': brand, 'Màu sắc': mau}])
+                df_fash = pd.concat([df_fash, moi], ignore_index=True)
+                save_db(df_fash, FILE_FASH)
                 st.success("Đã treo lên móc!")
                 st.rerun()
-                
-    with c2:
-        st.subheader("Gợi Ý Lên Đồ")
-        st.caption("Thuật toán tự động mix đồ không cần AI.")
-        if st.button("🎲 Hôm nay mặc gì?", type="primary", use_container_width=True):
-            ao = df_fashion[df_fashion['Loại'] == 'Áo']
-            quan = df_fashion[df_fashion['Loại'] == 'Quần']
-            if not ao.empty and not quan.empty:
-                chọn_ao = ao.sample(1).iloc[0]
-                chọn_quan = quan.sample(1).iloc[0]
-                st.success(f"**Top:** {chọn_ao['Tên món đồ']} ({chọn_ao['Màu sắc']})\n\n**Bottom:** {chọn_quan['Tên món đồ']} ({chọn_quan['Màu sắc']})")
+
+    c1, c2 = st.columns([1, 1])
+    with c1:
+        st.markdown("### 🎲 Phối đồ ngẫu nhiên hôm nay")
+        if st.button("Tạo Outfit (Không cần AI)", use_container_width=True):
+            aos = df_fash[df_fash['Loại'] == 'Áo']
+            quans = df_fash[df_fash['Loại'] == 'Quần']
+            if not aos.empty and not quans.empty:
+                ao_chon = aos.sample(1).iloc[0]
+                quan_chon = quans.sample(1).iloc[0]
+                st.success(f"**👕 TOP:** {ao_chon['Tên đồ']} ({ao_chon['Thương hiệu']} - {ao_chon['Màu sắc']})")
+                st.warning(f"**👖 BOTTOM:** {quan_chon['Tên đồ']} ({quan_chon['Thương hiệu']} - {quan_chon['Màu sắc']})")
                 st.balloons()
             else:
                 st.error("Tủ đồ chưa đủ cả Áo và Quần để mix!")
                 
-    st.markdown("---")
-    st.dataframe(df_fashion, use_container_width=True, hide_index=True)
-
-# ---------------------------------------
-# KHU 4: PHIM ẢNH (THÊM CHẤM ĐIỂM)
-# ---------------------------------------
-with t_mov:
-    c1, c2 = st.columns([1, 2])
-    with c1:
-        st.subheader("Thống Kê Điện Ảnh")
-        if not df_movie.empty:
-            diem_tb = pd.to_numeric(df_movie['Điểm (1-10)'], errors='coerce').mean()
-            st.metric("Điểm phim trung bình", f"{diem_tb:.1f} / 10")
-            st.write("**Top rạp hay đi:**")
-            st.bar_chart(df_movie['Rạp'].value_counts())
-        else:
-            st.info("Chưa có dữ liệu thống kê.")
-            
     with c2:
-        st.subheader("Lưu Dấu Chân Phim")
-        with st.form("form_movie", clear_on_submit=True):
+        st.markdown("### 🗄️ Thống kê Tủ đồ")
+        if not df_fash.empty:
+            st.bar_chart(df_fash['Thương hiệu'].value_counts())
+
+    st.markdown("### 🧥 Danh sách đồ trong tủ")
+    st.dataframe(df_fash, use_container_width=True, hide_index=True)
+
+# ------------------------------------------
+# TRANG 5: PHIM ẢNH (Giống Letterboxd)
+# ------------------------------------------
+elif menu == "🎬 Nhật Ký Phim (Letterboxd)":
+    st.title("🍿 LETTERBOXD CÁ NHÂN")
+    
+    with st.expander("➕ RATE PHIM VỪA XEM", expanded=False):
+        with st.form("mov_form", clear_on_submit=True):
             col_x, col_y = st.columns(2)
-            ngay_xem = col_x.date_input("Ngày xem")
-            ten_phim = col_y.text_input("Tên phim")
-            rap = col_x.selectbox("Xem ở đâu", ["Galaxy Sala", "CGV", "Lotte", "Netflix ở nhà", "Khác"])
-            danh_gia = col_y.number_input("Chấm điểm (1-10)", min_value=1, max_value=10, value=8)
-            if st.form_submit_button("LƯU CUỐN PHIM NÀY", use_container_width=True):
-                moi = pd.DataFrame([{'Ngày xem': str(ngay_xem), 'Tên phim': ten_phim, 'Rạp': rap, 'Điểm (1-10)': danh_gia}])
-                df_movie = pd.concat([df_movie, moi], ignore_index=True)
-                save_data(df_movie, FILES['movie'])
-                st.success("Tuyệt vời!")
+            ten_phim = col_x.text_input("Tên bộ phim")
+            rap = col_y.selectbox("Xem ở đâu?", ["Galaxy Sala", "CGV", "Lotte", "Netflix", "Web Lậu 🏴‍☠️"])
+            diem = st.slider("Chấm điểm (1-10)", 1.0, 10.0, 8.0, step=0.5)
+            ngay_xem = st.date_input("Ngày xem")
+            
+            if st.form_submit_button("LƯU REVIEW", use_container_width=True):
+                moi = pd.DataFrame([{'Tên phim': ten_phim, 'Rạp': rap, 'Điểm': diem, 'Ngày xem': str(ngay_xem)}])
+                df_mov = pd.concat([df_mov, moi], ignore_index=True)
+                save_db(df_mov, FILE_MOV)
+                st.success("Đã ghi dấu ấn điện ảnh!")
                 st.rerun()
-                
-    st.markdown("---")
-    st.dataframe(df_movie, use_container_width=True, hide_index=True)
+
+    if not df_mov.empty:
+        c1, c2 = st.columns(2)
+        c1.metric("Tổng phim đã xem", f"{len(df_mov)} Bộ")
+        c2.metric("Điểm trung bình", f"{df_mov['Điểm'].mean():.1f} ⭐️")
+        
+        st.markdown("### 🎞️ Bộ sưu tập điện ảnh")
+        # In phim theo dạng Card (Thẻ) từ mới đến cũ
+        cols = st.columns(3)
+        for i, row in df_mov.iloc[::-1].iterrows():
+            col_idx = i % 3
+            with cols[col_idx]:
+                st.markdown(f"""
+                <div class="custom-card" style="border-left-color: #92FE9D;">
+                    <h4 style="margin:0; color:#92FE9D;">{row['Tên phim']}</h4>
+                    <p style="margin:5px 0; font-size:14px; color:#aaa;">📍 {row['Rạp']}</p>
+                    <p style="margin:0; font-size:18px; color:gold;">{'⭐' * int(row['Điểm'])} ({row['Điểm']})</p>
+                </div>
+                """, unsafe_allow_html=True)
+    else:
+        st.info("Chưa có phim nào được lưu.")
