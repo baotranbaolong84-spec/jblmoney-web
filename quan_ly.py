@@ -1,27 +1,35 @@
 import streamlit as st
 import pandas as pd
 import os
-import google.generativeai as genai
 import time
 from datetime import datetime
 import streamlit.components.v1 as components
+import requests
 
 # =======================================
 # 1. CẤU HÌNH TRANG WEB
 # =======================================
-st.set_page_config(page_title="JBLMONEY Ultimate", page_icon="💎", layout="centered")
+st.set_page_config(page_title="JBLMONEY Ultimate v3", page_icon="💎", layout="centered")
 
 # =======================================
-# 2. CẤU HÌNH AI CHÍNH HÃNG (MÃ AIza)
+# 2. MÃ API ĐÃ CẮM TRỰC TIẾP (MÃ AQ THẾ HỆ MỚI)
 # =======================================
-# ⚠️ BOSS XÓA DÒNG CHỮ TRONG NGOẶC KÉP VÀ DÁN MÃ AIza... CỦA BOSS VÀO ĐÂY:
-API_KEY_CUA_BOSS = "AQ.Ab8RN6LefgFjAvHsU8Nf5jLIRK2a8QxGFkG7I5kSKmmdCqqbYg"
+# ⚠️ Nếu Boss có mã AQ mới tinh vừa tạo thì dán đè vào giữa 2 dấu ngoặc kép này nhé:
+API_KEY_CUA_BOSS = "AQ.Ab8RN6LEdFI7G2-q-Fy43V5HoAPvT5udL47hz8TO2Y7C69HOqA"
 
-try:
-    genai.configure(api_key=API_KEY_CUA_BOSS)
-    bo_nao_ai = genai.GenerativeModel('gemini-1.5-flash')
-except Exception as e:
-    st.error(f"Lỗi cấu hình AI: {e}")
+def hoi_ai_gemini(cau_hoi):
+    # Dùng cổng v1beta truyền trực tiếp key qua URL để chạy mượt mã AQ
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={API_KEY_CUA_BOSS}"
+    headers = {'Content-Type': 'application/json'}
+    data = {"contents": [{"parts": [{"text": cau_hoi}]}]}
+    try:
+        response = requests.post(url, headers=headers, json=data)
+        if response.status_code == 200:
+            return response.json()['candidates'][0]['content']['parts'][0]['text']
+        else:
+            return f"Lỗi Google ({response.status_code}): {response.text}\n\n👉 Boss ơi, nếu gặp lỗi 404 thì nhớ vào đúng dự án 'Gemini Project' (mã số 961912735794) trên Google Cloud bấm nút KÍCH HOẠT (ENABLE) lên nhé!"
+    except Exception as e:
+        return f"Lỗi kết nối mạng: {e}"
 
 # =======================================
 # 3. KHO DỮ LIỆU & CSS GIAO DIỆN
@@ -84,22 +92,18 @@ with st.sidebar:
     st.markdown("---")
     thang_loc = st.selectbox("📅 Chọn Tháng", range(1, 13), index=int(datetime.now().month-1))
     st.markdown("---")
-    st.markdown("### 🤖 Trợ lý AI (Đã găm sẵn khóa AIza)")
+    st.markdown("### 🤖 Trợ lý AI (Đã găm sẵn khóa AQ)")
     chat_box = st.container(height=350, border=True)
-    if "chat" not in st.session_state: st.session_state.chat = [{"role": "assistant", "content": "Khóa AIza đã kích hoạt! Hỏi em đi Boss!"}]
+    if "chat" not in st.session_state: st.session_state.chat = [{"role": "assistant", "content": "Khóa AQ đã được nạp trực tiếp! Boss cứ hỏi là em trả lời liền!"}]
     for msg in st.session_state.chat: chat_box.chat_message(msg["role"]).write(msg["content"])
     
     if q := st.chat_input("Hỏi AI..."):
         st.session_state.chat.append({"role": "user", "content": q})
         chat_box.chat_message("user").write(q)
         
-        try:
-            lenh_ai = f"Dữ liệu của Boss: Thu {tong_thu_all}, Chi {tong_chi_all}, Dư {so_du_all}. Hãy trả lời: {q}"
-            ans = bo_nao_ai.generate_content(lenh_ai)
-            cau_tra_loi = ans.text
-        except Exception as e:
-            cau_tra_loi = f"Lỗi AI: {e}"
-            
+        lenh_ai = f"Dữ liệu của Boss: Thu {tong_thu_all}, Chi {tong_chi_all}, Dư {so_du_all}. Hãy trả lời ngắn gọn: {q}"
+        cau_tra_loi = hoi_ai_gemini(lenh_ai)
+        
         chat_box.chat_message("assistant").write(cau_tra_loi)
         st.session_state.chat.append({"role": "assistant", "content": cau_tra_loi})
 
@@ -126,7 +130,7 @@ with tab1:
         with col1:
             loai = st.radio("Loại", ["Chi tiêu", "Thu nhập"], horizontal=True)
             ngay = st.date_input("Ngày")
-            danh_muc = st.text_input("Danh mục")
+            danh_muc = st.text_input("Danh mục (Ăn uống, Lương...)")
         with col2:
             tien = st.number_input("Số tiền (VNĐ)", min_value=0, step=50000)
             vi_tien = st.selectbox("Ví", ["Tiền mặt", "Ngân hàng", "Thẻ Tín dụng"])
@@ -160,13 +164,10 @@ with tab3:
     
     if st.button("🔥 AI soi mói thói quen xài tiền!", type="primary", use_container_width=True):
         with st.spinner("AI đang check dữ liệu..."):
-            try:
-                ds_chi = df_chi[['Danh mục', 'Số tiền (VNĐ)']].to_string()
-                lenh = f"Boss đã tiêu: {ds_chi}. Hãy đóng vai chuyên gia tài chính đanh đá, châm biếm thói tiêu hoang này. Cấm khen!"
-                ket_qua = bo_nao_ai.generate_content(lenh)
-                st.error(ket_qua.text)
-            except Exception as e:
-                st.warning(f"Lỗi AI: {e}")
+            ds_chi = df_chi[['Danh mục', 'Số tiền (VNĐ)']].to_string()
+            lenh = f"Boss đã tiêu: {ds_chi}. Hãy đóng vai chuyên gia tài chính đanh đá, châm biếm thói tiêu hoang này. Cấm khen!"
+            ket_qua = hoi_ai_gemini(lenh)
+            st.error(ket_qua)
 
 # --- TAB 4: CHIA BILL ---
 with tab4:
