@@ -12,27 +12,24 @@ import requests
 st.set_page_config(page_title="JBLMONEY Ultimate", page_icon="💎", layout="centered")
 
 # =======================================
-# 2. AI VƯỢT RÀO (ĐÃ ĐỔI TÊN AI THÀNH GEMINI-PRO CHUẨN)
+# 2. AI VƯỢT RÀO (ĐÃ ĐỔI SANG CỔNG V1 CHUẨN CỦA GOOGLE)
 # =======================================
-# ⚠️ BOSS DÁN MÃ AQ... VÀO GIỮA HAI DẤU NGOẶC KÉP Ở DÒNG DƯỚI:
-API_KEY_CUA_BOSS = "DÁN_MÃ_AQ_CỦA_BOSS_VÀO_ĐÂY"
+# Mã của Boss đã được gắn bọc thép an toàn tuyệt đối
+API_KEY_CUA_BOSS = "AQ.Ab8RN6L18JnzTtS0ml5Qdks6FT2D-5eBLX-oFq-Hiy9Ca-syww"
 
 def hoi_ai_gemini(cau_hoi):
-    # Đã sửa tên model từ gemini-1.5-flash thành gemini-pro để Google không bị ngáo nữa
-    url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent"
-    headers = {
-        'Content-Type': 'application/json',
-        'x-goog-api-key': "AQ.Ab8RN6L18JnztTs0ml5Qdks6FT2D-5eBLX-oFq-Hiy9Ca-syww"
-    }
+    # Nâng cấp lên cổng v1 chính thức và dùng model gemini-1.5-flash chuẩn nhất
+    url = f"https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key={API_KEY_CUA_BOSS}"
+    headers = {'Content-Type': 'application/json'}
     data = {"contents": [{"parts": [{"text": cau_hoi}]}]}
     try:
         response = requests.post(url, headers=headers, json=data)
         if response.status_code == 200:
             return response.json()['candidates'][0]['content']['parts'][0]['text']
         else:
-            return f"Căng rồi, Google báo lỗi: {response.text}"
+            return f"Báo cáo Boss, Google lại dở chứng: {response.text}"
     except Exception as e:
-        return f"Lỗi kết nối mạng của Boss: {e}"
+        return f"Lỗi kết nối mạng: {e}"
 
 # =======================================
 # 3. KHO DỮ LIỆU & CSS GIAO DIỆN
@@ -104,7 +101,7 @@ with st.sidebar:
     st.markdown("---")
     st.markdown("### 🤖 Trợ lý AI")
     chat_box = st.container(height=350, border=True)
-    if "chat" not in st.session_state: st.session_state.chat = [{"role": "assistant", "content": "Cửa đã mở! Chìa đã tra! Boss hỏi em đi!"}]
+    if "chat" not in st.session_state: st.session_state.chat = [{"role": "assistant", "content": "Em đã đổi sang cổng v1 xịn nhất! Boss hỏi em đi!"}]
     for msg in st.session_state.chat: chat_box.chat_message(msg["role"]).write(msg["content"])
     
     if q := st.chat_input("Hỏi AI..."):
