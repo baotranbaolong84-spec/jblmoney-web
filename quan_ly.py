@@ -11,14 +11,10 @@ import requests
 # =======================================
 st.set_page_config(page_title="JBLMONEY Ultimate", page_icon="💎", layout="centered")
 
-# =======================================
-# 2. AI VƯỢT RÀO (ĐÃ GẮN SẴN MÃ CỦA BOSS)
-# =======================================
-API_KEY_CUA_BOSS = "AQ.Ab8RN6LEdFI7G2-q-Fy43V5HoAPvT5udL47hz8TO2Y7C69HOqA"
-
-def hoi_ai_gemini(cau_hoi):
-    # Dùng cổng v1beta, truyền key trực tiếp qua URL để né lỗi của thư viện
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={API_KEY_CUA_BOSS}"
+def hoi_ai_gemini(cau_hoi, api_key):
+    if not api_key:
+        return "⚠️ Boss chưa dán mã AIza vào ô Cài Đặt AI ở menu bên trái kìa!"
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
     headers = {'Content-Type': 'application/json'}
     data = {"contents": [{"parts": [{"text": cau_hoi}]}]}
     try:
@@ -26,9 +22,9 @@ def hoi_ai_gemini(cau_hoi):
         if response.status_code == 200:
             return response.json()['candidates'][0]['content']['parts'][0]['text']
         else:
-            return f"Báo cáo Boss, Google lại dở chứng: Lỗi {response.status_code} - {response.text}"
+            return f"Lỗi Google: {response.status_code} - {response.text}"
     except Exception as e:
-        return f"Lỗi kết nối mạng: {e}"
+        return f"Lỗi mạng: {e}"
 
 # =======================================
 # 3. KHO DỮ LIỆU & CSS GIAO DIỆN
@@ -85,7 +81,7 @@ if not st.session_state.dang_nhap:
     st.stop()
 
 # =======================================
-# 5. SIDEBAR & CHAT AI TRỰC TIẾP
+# 5. SIDEBAR & CHAT AI
 # =======================================
 tong_thu_all = df[df['Loại'] == 'Thu nhập']['Số tiền (VNĐ)'].sum()
 tong_chi_all = df[df['Loại'] == 'Chi tiêu']['Số tiền (VNĐ)'].sum()
@@ -98,17 +94,21 @@ with st.sidebar:
     st.markdown("---")
     thang_loc = st.selectbox("📅 Chọn Tháng", range(1, 13), index=int(datetime.now().month-1))
     st.markdown("---")
-    st.markdown("### 🤖 Trợ lý AI (Đã hồi sinh)")
+    st.markdown("### 🤖 Cài Đặt AI")
+    # Ô NHẬP KHÓA BÍ MẬT TRÊN WEB (Né Github)
+    khoa_api_nhap = st.text_input("🔑 Dán mã AIza của Boss vào đây:", type="password")
+    
+    st.markdown("### 🤖 Trợ lý AI")
     chat_box = st.container(height=350, border=True)
-    if "chat" not in st.session_state: st.session_state.chat = [{"role": "assistant", "content": "Em đã quay lại rồi đây Boss! Hỏi em đi!"}]
+    if "chat" not in st.session_state: st.session_state.chat = [{"role": "assistant", "content": "Boss dán khóa AIza vào ô Cài đặt AI bên trên rồi hỏi em nhé!"}]
     for msg in st.session_state.chat: chat_box.chat_message(msg["role"]).write(msg["content"])
     
     if q := st.chat_input("Hỏi AI..."):
         st.session_state.chat.append({"role": "user", "content": q})
         chat_box.chat_message("user").write(q)
         
-        lenh_ai = f"Dữ liệu của Boss: Thu {tong_thu_all}, Chi {tong_chi_all}, Dư {so_du_all}. Hãy trả lời ngắn gọn: {q}"
-        cau_tra_loi = hoi_ai_gemini(lenh_ai)
+        lenh_ai = f"Dữ liệu của Boss: Thu {tong_thu_all}, Chi {tong_chi_all}, Dư {so_du_all}. Dựa vào dữ liệu trả lời: {q}"
+        cau_tra_loi = hoi_ai_gemini(lenh_ai, khoa_api_nhap)
         
         chat_box.chat_message("assistant").write(cau_tra_loi)
         st.session_state.chat.append({"role": "assistant", "content": cau_tra_loi})
@@ -184,8 +184,8 @@ with tab3:
     if st.button("🔥 AI soi mói thói quen xài tiền!", type="primary", use_container_width=True):
         with st.spinner("AI đang check dữ liệu..."):
             ds_chi = df_chi[['Danh mục', 'Số tiền (VNĐ)']].to_string()
-            lenh = f"Boss đã tiêu: {ds_chi}. Hãy đóng vai chuyên gia tài chính đanh đá, châm biếm thói tiêu hoang này. Cấm khen!"
-            ket_qua = hoi_ai_gemini(lenh)
+            lenh = f"Boss đã tiêu: {ds_chi}. Đóng vai chuyên gia tài chính đanh đá, châm biếm thói tiêu hoang này. Cấm khen!"
+            ket_qua = hoi_ai_gemini(lenh, khoa_api_nhap)
             st.error(ket_qua)
 
 # --- TAB 4: CHIA BILL ---
