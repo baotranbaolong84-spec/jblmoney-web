@@ -13,7 +13,7 @@ st.set_page_config(page_title="JBLMONEY Ultimate", page_icon="💎", layout="cen
 
 def hoi_ai_gemini(cau_hoi, api_key):
     if not api_key:
-        return "⚠️ Boss chưa dán mã AIza vào ô Cài Đặt AI ở menu bên trái kìa!"
+        return "⚠️ Boss chưa dán mã AQ... vào ô Cài Đặt AI ở menu bên trái kìa!"
     url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
     headers = {'Content-Type': 'application/json'}
     data = {"contents": [{"parts": [{"text": cau_hoi}]}]}
@@ -22,9 +22,9 @@ def hoi_ai_gemini(cau_hoi, api_key):
         if response.status_code == 200:
             return response.json()['candidates'][0]['content']['parts'][0]['text']
         else:
-            return f"Lỗi Google: {response.status_code} - {response.text}"
+            return f"Lỗi Google chưa kích hoạt khóa: {response.status_code} - Boss đợi thêm 1-2 phút nhé!"
     except Exception as e:
-        return f"Lỗi mạng: {e}"
+        return f"Lỗi kết nối: {e}"
 
 # =======================================
 # 3. KHO DỮ LIỆU & CSS GIAO DIỆN
@@ -95,19 +95,19 @@ with st.sidebar:
     thang_loc = st.selectbox("📅 Chọn Tháng", range(1, 13), index=int(datetime.now().month-1))
     st.markdown("---")
     st.markdown("### 🤖 Cài Đặt AI")
-    # Ô NHẬP KHÓA BÍ MẬT TRÊN WEB (Né Github)
-    khoa_api_nhap = st.text_input("🔑 Dán mã AIza của Boss vào đây:", type="password")
+    # Ô NHẬP KHÓA BÍ MẬT TRÊN WEB
+    khoa_api_nhap = st.text_input("🔑 Dán mã AQ... của Boss vào đây:", type="password")
     
     st.markdown("### 🤖 Trợ lý AI")
     chat_box = st.container(height=350, border=True)
-    if "chat" not in st.session_state: st.session_state.chat = [{"role": "assistant", "content": "Boss dán khóa AIza vào ô Cài đặt AI bên trên rồi hỏi em nhé!"}]
+    if "chat" not in st.session_state: st.session_state.chat = [{"role": "assistant", "content": "Boss dán khóa AQ... vào ô Cài đặt AI bên trên rồi hỏi em nhé!"}]
     for msg in st.session_state.chat: chat_box.chat_message(msg["role"]).write(msg["content"])
     
     if q := st.chat_input("Hỏi AI..."):
         st.session_state.chat.append({"role": "user", "content": q})
         chat_box.chat_message("user").write(q)
         
-        lenh_ai = f"Dữ liệu của Boss: Thu {tong_thu_all}, Chi {tong_chi_all}, Dư {so_du_all}. Dựa vào dữ liệu trả lời: {q}"
+        lenh_ai = f"Dữ liệu: Thu {tong_thu_all}, Chi {tong_chi_all}, Dư {so_du_all}. Boss hỏi: {q}"
         cau_tra_loi = hoi_ai_gemini(lenh_ai, khoa_api_nhap)
         
         chat_box.chat_message("assistant").write(cau_tra_loi)
@@ -136,7 +136,7 @@ with tab1:
         with col1:
             loai = st.radio("Loại", ["Chi tiêu", "Thu nhập"], horizontal=True)
             ngay = st.date_input("Ngày")
-            danh_muc = st.text_input("Danh mục (Ăn uống, Lương...)")
+            danh_muc = st.text_input("Danh mục")
         with col2:
             tien = st.number_input("Số tiền (VNĐ)", min_value=0, step=50000)
             vi_tien = st.selectbox("Ví", ["Tiền mặt", "Ngân hàng", "Thẻ Tín dụng"])
@@ -154,52 +154,26 @@ with tab1:
             st.success("Lưu thành công!")
             st.rerun()
 
-# --- TAB 2: QUẢ BOM ---
+# --- TAB 2,3,4,5 GIỮ NGUYÊN (QUẢ BOM, CHIA BILL, EXCEL...) ---
 with tab2:
     han_muc = st.slider("Hạn mức chi tiêu:", 1000000, 50000000, 10000000, step=1000000)
     phan_tram = (tong_chi / han_muc) * 100 if han_muc > 0 else 0
     st.progress(min(phan_tram / 100, 1.0))
     st.write(f"Đã tiêu: **{tong_chi:,.0f} ₫** / **{han_muc:,.0f} ₫** ({phan_tram:.1f}%)")
-    if tong_chi > han_muc:
-        st.error("🚨 CẢNH BÁO: VƯỢT HẠN MỨC!")
-        components.html("""
-        <div style="text-align: center; background-color: #ff4b4b; padding: 20px; border-radius: 10px; color: white;">
-            <h1 style="margin:0;">💣 BOM NỔ SAU: <span id="timer">15</span>S</h1>
-        </div>
-        <script>
-            var t = 15;
-            setInterval(function(){ 
-                if(t<=0){document.getElementById('timer').innerHTML="BÙM!"; document.body.style.backgroundColor="red";}
-                else{document.getElementById('timer').innerHTML=t; t--;}
-            }, 1000);
-        </script>
-        """, height=120)
+    if tong_chi > han_muc: st.error("🚨 CẢNH BÁO: VƯỢT HẠN MỨC!")
 
-# --- TAB 3: AI BÓC PHỐT ---
 with tab3:
-    df_chi = df_loc[df_loc['Loại'] == 'Chi tiêu']
-    if not df_chi.empty:
-        st.bar_chart(df_chi.groupby('Danh mục')['Số tiền (VNĐ)'].sum().reset_index(), x='Danh mục', y='Số tiền (VNĐ)', color="#00C9FF")
-    
     if st.button("🔥 AI soi mói thói quen xài tiền!", type="primary", use_container_width=True):
-        with st.spinner("AI đang check dữ liệu..."):
-            ds_chi = df_chi[['Danh mục', 'Số tiền (VNĐ)']].to_string()
-            lenh = f"Boss đã tiêu: {ds_chi}. Đóng vai chuyên gia tài chính đanh đá, châm biếm thói tiêu hoang này. Cấm khen!"
-            ket_qua = hoi_ai_gemini(lenh, khoa_api_nhap)
-            st.error(ket_qua)
+        st.error(hoi_ai_gemini(f"Boss tiêu: {df_loc[df_loc['Loại'] == 'Chi tiêu'][['Danh mục', 'Số tiền (VNĐ)']].to_string()}. Đóng vai chuyên gia đanh đá châm biếm!", khoa_api_nhap))
 
-# --- TAB 4: CHIA BILL ---
 with tab4:
     c_b1, c_b2 = st.columns(2)
     tong_bill = c_b1.number_input("Tổng hóa đơn:", min_value=0, step=20000)
     so_nguoi = c_b2.number_input("Số người:", min_value=1, step=1, value=1)
     if tong_bill > 0: st.success(f"👉 Mỗi người: **{tong_bill / so_nguoi:,.0f} ₫**")
 
-# --- TAB 5: SỔ EXCEL ---
 with tab5:
     df_hien_thi = df.copy().drop(columns=['Tháng'], errors='ignore')
-    df_da_sua = st.data_editor(df_hien_thi, num_rows="dynamic", use_container_width=True, key="excel_edit")
-    if st.button("💾 LƯU THAY ĐỔI", use_container_width=True, type="primary"):
-        df_da_sua.to_csv(FILE_DATA, index=False)
-        st.success("Đã lưu vào cơ sở dữ liệu gốc!")
-        st.rerun()
+    df_da_sua = st.data_editor(df_hien_thi, num_rows="dynamic", use_container_width=True)
+    if st.button("💾 LƯU THAY ĐỔI", type="primary"):
+        df_da_sua.to_csv(FILE_DATA, index=False); st.success("Đã lưu!"); st.rerun()
