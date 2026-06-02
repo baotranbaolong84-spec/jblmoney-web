@@ -1,186 +1,146 @@
 import streamlit as st
 import pandas as pd
 import os
-import time
+import google.generativeai as genai
 from datetime import datetime
-import streamlit.components.v1 as components
-import requests
 
 # =======================================
-# 1. CẤU HÌNH TRANG WEB
+# 1. CẤU HÌNH TRANG WEB CHUẨN XỊN
 # =======================================
-st.set_page_config(page_title="JBLMONEY Ultimate v3", page_icon="💎", layout="centered")
-
-# =======================================
-# 2. MÃ API ĐÃ CẮM TRỰC TIẾP (MÃ AQ THẾ HỆ MỚI)
-# =======================================
-# ⚠️ Nếu Boss có mã AQ mới tinh vừa tạo thì dán đè vào giữa 2 dấu ngoặc kép này nhé:
-API_KEY_CUA_BOSS = "AQ.Ab8RN6LEdFI7G2-q-Fy43V5HoAPvT5udL47hz8TO2Y7C69HOqA"
-
-def hoi_ai_gemini(cau_hoi):
-    # Dùng cổng v1beta truyền trực tiếp key qua URL để chạy mượt mã AQ
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={API_KEY_CUA_BOSS}"
-    headers = {'Content-Type': 'application/json'}
-    data = {"contents": [{"parts": [{"text": cau_hoi}]}]}
-    try:
-        response = requests.post(url, headers=headers, json=data)
-        if response.status_code == 200:
-            return response.json()['candidates'][0]['content']['parts'][0]['text']
-        else:
-            return f"Lỗi Google ({response.status_code}): {response.text}\n\n👉 Boss ơi, nếu gặp lỗi 404 thì nhớ vào đúng dự án 'Gemini Project' (mã số 961912735794) trên Google Cloud bấm nút KÍCH HOẠT (ENABLE) lên nhé!"
-    except Exception as e:
-        return f"Lỗi kết nối mạng: {e}"
-
-# =======================================
-# 3. KHO DỮ LIỆU & CSS GIAO DIỆN
-# =======================================
-FILE_DATA = 'so_thu_chi.csv'
-THU_MUC_ANH = 'Hoa_Don'
-if not os.path.exists(THU_MUC_ANH): os.makedirs(THU_MUC_ANH)
-
-def tai_du_lieu():
-    if os.path.exists(FILE_DATA):
-        try:
-            df = pd.read_csv(FILE_DATA)
-            if 'Ví' not in df.columns: df['Ví'] = 'Tiền mặt'
-            if 'Hóa đơn' not in df.columns: df['Hóa đơn'] = 'Không có'
-            return df
-        except: pass
-    return pd.DataFrame(columns=['Ngày', 'Loại', 'Danh mục', 'Ví', 'Số tiền (VNĐ)', 'Ghi chú', 'Hóa đơn'])
-
-df = tai_du_lieu()
-df['Số tiền (VNĐ)'] = pd.to_numeric(df['Số tiền (VNĐ)'], errors='coerce').fillna(0)
-df['Tháng'] = pd.to_datetime(df['Ngày'], errors='coerce').dt.month
-df['Tháng'] = df['Tháng'].fillna(datetime.now().month).astype(int)
+st.set_page_config(page_title="Boss Super App", page_icon="🔥", layout="wide")
 
 st.markdown("""
 <style>
-    div[data-testid="metric-container"] { background-color: #1E1E2E !important; border-radius: 15px !important; padding: 20px !important; box-shadow: 0 4px 6px rgba(0,0,0,0.3) !important; border: 1px solid #333 !important; }
-    div.stButton > button { background: linear-gradient(90deg, #00C9FF 0%, #92FE9D 100%) !important; color: black !important; font-weight: bold !important; border-radius: 8px !important; border: none !important; }
+    div.stButton > button { background: linear-gradient(90deg, #ff416c 0%, #ff4b2b 100%) !important; color: white !important; font-weight: bold !important; border-radius: 8px !important; border: none !important; }
     div.stButton > button:hover { opacity: 0.8 !important; }
-    div[data-testid="stSidebar"] div.stButton > button { background: linear-gradient(90deg, #ff416c 0%, #ff4b2b 100%) !important; color: white !important; }
+    h1, h2, h3 { color: #00C9FF !important; }
 </style>
 """, unsafe_allow_html=True)
 
 # =======================================
-# 4. HỆ THỐNG ĐĂNG NHẬP
+# 2. HỆ THỐNG LƯU TRỮ CSV RIÊNG BIỆT
 # =======================================
-if 'dang_nhap' not in st.session_state: st.session_state.dang_nhap = False
-if not st.session_state.dang_nhap:
-    c1, c2, c3 = st.columns([1, 1.5, 1])
-    with c2:
-        st.markdown("<h2 style='text-align: center; color: #00C9FF; margin-top: 50px;'>💎 ĐĂNG NHẬP JBLMONEY</h2>", unsafe_allow_html=True)
-        pwd = st.text_input("Nhập mã PIN bảo mật (1234)", type="password", key="login_pin")
-        if st.button("🚀 Đăng Nhập", use_container_width=True):
-            if pwd == "1234":
-                st.session_state.dang_nhap = True
-                st.rerun()
-            else: st.error("Sai mã PIN!")
-    st.stop()
+FILES = {'gym': 'gym_data.csv', 'eng': 'eng_data.csv', 'fashion': 'fashion_data.csv', 'movie': 'movie_data.csv'}
+
+def load_data(file_name, columns):
+    if os.path.exists(file_name):
+        try: return pd.read_csv(file_name)
+        except: pass
+    return pd.DataFrame(columns=columns)
+
+def save_data(df, file_name):
+    df.to_csv(file_name, index=False)
+
+df_gym = load_data(FILES['gym'], ['Ngày', 'Loại', 'Thành tích', 'Ghi chú'])
+df_eng = load_data(FILES['eng'], ['Ngày', 'Từ vựng', 'Nghĩa', 'Ví dụ'])
+df_fashion = load_data(FILES['fashion'], ['Tên món đồ', 'Thương hiệu', 'Loại', 'Màu sắc'])
+df_movie = load_data(FILES['movie'], ['Ngày xem', 'Tên phim', 'Rạp', 'Đánh giá'])
 
 # =======================================
-# 5. SIDEBAR & CHAT AI TRỰC TIẾP
+# 3. SIDEBAR - CHÌA KHÓA & TRỢ LÝ AI ĐA NĂNG
 # =======================================
-tong_thu_all = df[df['Loại'] == 'Thu nhập']['Số tiền (VNĐ)'].sum()
-tong_chi_all = df[df['Loại'] == 'Chi tiêu']['Số tiền (VNĐ)'].sum()
-so_du_all = tong_thu_all - tong_chi_all
-
 with st.sidebar:
-    st.markdown("### 💎 Menu Điều Khiển")
-    if st.button("Đăng xuất", key="logout"): 
-        st.session_state.dang_nhap = False; st.rerun()
-    st.markdown("---")
-    thang_loc = st.selectbox("📅 Chọn Tháng", range(1, 13), index=int(datetime.now().month-1))
-    st.markdown("---")
-    st.markdown("### 🤖 Trợ lý AI (Đã găm sẵn khóa AQ)")
-    chat_box = st.container(height=350, border=True)
-    if "chat" not in st.session_state: st.session_state.chat = [{"role": "assistant", "content": "Khóa AQ đã được nạp trực tiếp! Boss cứ hỏi là em trả lời liền!"}]
-    for msg in st.session_state.chat: chat_box.chat_message(msg["role"]).write(msg["content"])
+    st.markdown("### 🔑 Khởi Động Trợ Lý AI")
+    khoa_api = st.text_input("Dán mã AIza hoặc AQ của Boss vào đây:", type="password")
     
-    if q := st.chat_input("Hỏi AI..."):
-        st.session_state.chat.append({"role": "user", "content": q})
-        chat_box.chat_message("user").write(q)
+    st.markdown("---")
+    st.markdown("### 🤖 Trợ Lý Đa Năng")
+    chat_box = st.container(height=400, border=True)
+    
+    if "chat" not in st.session_state: 
+        st.session_state.chat = [{"role": "assistant", "content": "Siêu ứng dụng 4-in-1 đã sẵn sàng! Boss muốn check lịch tập, học từ vựng, phối đồ hay tìm phim?"}]
         
-        lenh_ai = f"Dữ liệu của Boss: Thu {tong_thu_all}, Chi {tong_chi_all}, Dư {so_du_all}. Hãy trả lời ngắn gọn: {q}"
-        cau_tra_loi = hoi_ai_gemini(lenh_ai)
-        
-        chat_box.chat_message("assistant").write(cau_tra_loi)
-        st.session_state.chat.append({"role": "assistant", "content": cau_tra_loi})
+    for msg in st.session_state.chat: 
+        chat_box.chat_message(msg["role"]).write(msg["content"])
+    
+    if q := st.chat_input("Ra lệnh cho AI..."):
+        if not khoa_api:
+            st.error("⚠️ Boss nhập chìa khóa ở trên kìa!")
+        else:
+            st.session_state.chat.append({"role": "user", "content": q})
+            chat_box.chat_message("user").write(q)
+            try:
+                genai.configure(api_key=khoa_api)
+                model = genai.GenerativeModel('gemini-1.5-flash')
+                # Nhồi ngữ cảnh dữ liệu 4 mảng cho AI
+                context = f"Dữ liệu Boss: \n- Đồ streetwear: {df_fashion.to_string()} \n- Phim đã xem: {df_movie.to_string()} \n- Lịch tập: {df_gym.to_string()} \nHãy trả lời câu hỏi sau như một người trợ lý đắc lực, ngầu và hài hước: {q}"
+                ans = model.generate_content(context)
+                chat_box.chat_message("assistant").write(ans.text)
+                st.session_state.chat.append({"role": "assistant", "content": ans.text})
+            except Exception as e:
+                st.error(f"Lỗi AI: {e}")
 
 # =======================================
-# 6. MÀN HÌNH CHÍNH & TABS CHỨC NĂNG
+# 4. GIAO DIỆN CHÍNH - 4 PHÂN KHU
 # =======================================
-df_loc = df[df['Tháng'] == thang_loc]
-tong_thu = df_loc[df_loc['Loại'] == 'Thu nhập']['Số tiền (VNĐ)'].sum()
-tong_chi = df_loc[df_loc['Loại'] == 'Chi tiêu']['Số tiền (VNĐ)'].sum()
+st.title("🔥 KHO CHỈ HUY CÁ NHÂN TỐI THƯỢNG 🔥")
+tab1, tab2, tab3, tab4 = st.tabs(["🏋️ CƠ BẮP & BƠI LỘI", "🇬🇧 ĐẤU TRƯỜNG ENGLISH", "🧢 TỦ ĐỒ STREETWEAR", "🍿 RẠP PHIM GALAXY"])
 
-st.markdown(f"<h1>📊 Báo cáo Tài Chính (Tháng {thang_loc})</h1>", unsafe_allow_html=True)
-c1, c2, c3 = st.columns(3)
-c1.metric("💰 SỐ DƯ TÀI KHOẢN", f"{tong_thu - tong_chi:,.0f} ₫")
-c2.metric("🟢 DÒNG TIỀN VÀO", f"{tong_thu:,.0f} ₫")
-c3.metric("🔴 DÒNG TIỀN RA", f"{tong_chi:,.0f} ₫")
-st.markdown("---")
-
-tab1, tab2, tab3, tab4, tab5 = st.tabs(["📝 GHI CHÉP", "💣 NGÂN SÁCH", "📈 AI BÓC PHỐT", "🧮 TIỆN ÍCH", "📋 SỔ EXCEL"])
-
-# --- TAB 1: NHẬP LIỆU ---
+# --- KHU 1: GYM & BƠI LỘI ---
 with tab1:
-    with st.form("form_nhap", clear_on_submit=True):
-        col1, col2 = st.columns(2)
-        with col1:
-            loai = st.radio("Loại", ["Chi tiêu", "Thu nhập"], horizontal=True)
-            ngay = st.date_input("Ngày")
-            danh_muc = st.text_input("Danh mục (Ăn uống, Lương...)")
-        with col2:
-            tien = st.number_input("Số tiền (VNĐ)", min_value=0, step=50000)
-            vi_tien = st.selectbox("Ví", ["Tiền mặt", "Ngân hàng", "Thẻ Tín dụng"])
-            ghi_chu = st.text_input("Ghi chú")
-        
-        file_anh = st.file_uploader("📸 Tải ảnh Hóa đơn", type=["jpg", "png"])
-        if st.form_submit_button("LƯU GIAO DỊCH", use_container_width=True):
-            ten_file = "Không có"
-            if file_anh:
-                ten_file = f"bill_{int(time.time())}.png"
-                with open(os.path.join(THU_MUC_ANH, ten_file), "wb") as f: f.write(file_anh.getbuffer())
-            dl_moi = pd.DataFrame([{'Ngày': str(ngay), 'Loại': loai, 'Danh mục': danh_muc, 'Ví': vi_tien, 'Số tiền (VNĐ)': tien, 'Ghi chú': ghi_chu, 'Hóa đơn': ten_file}])
-            df = pd.concat([df.drop(columns=['Tháng'], errors='ignore'), dl_moi], ignore_index=True)
-            df.to_csv(FILE_DATA, index=False)
-            st.success("Lưu thành công!")
+    st.markdown("### 🏋️ Ghi Chép Luyện Tập")
+    with st.form("form_gym", clear_on_submit=True):
+        c1, c2, c3 = st.columns(3)
+        ngay_tap = c1.date_input("Ngày tập")
+        loai_tap = c2.selectbox("Môn tập", ["Gym", "Bơi lội", "Khác"])
+        thanh_tich = c3.text_input("Thành tích (VD: Đẩy 50kg, Bơi 20 vòng)")
+        ghi_chu_gym = st.text_input("Ghi chú")
+        if st.form_submit_button("LƯU BUỔI TẬP"):
+            moi = pd.DataFrame([{'Ngày': str(ngay_tap), 'Loại': loai_tap, 'Thành tích': thanh_tich, 'Ghi chú': ghi_chu_gym}])
+            df_gym = pd.concat([df_gym, moi], ignore_index=True)
+            save_data(df_gym, FILES['gym'])
+            st.success("Đã lưu lịch tập!")
             st.rerun()
+    st.dataframe(df_gym, use_container_width=True)
 
-# --- TAB 2: QUẢ BOM ---
+# --- KHU 2: TIẾNG ANH ---
 with tab2:
-    han_muc = st.slider("Hạn mức chi tiêu:", 1000000, 50000000, 10000000, step=1000000)
-    phan_tram = (tong_chi / han_muc) * 100 if han_muc > 0 else 0
-    st.progress(min(phan_tram / 100, 1.0))
-    st.write(f"Đã tiêu: **{tong_chi:,.0f} ₫** / **{han_muc:,.0f} ₫** ({phan_tram:.1f}%)")
-    if tong_chi > han_muc: st.error("🚨 CẢNH BÁO: VƯỢT HẠN MỨC!")
+    st.markdown("### 🇬🇧 Nạp Từ Vựng Mỗi Ngày")
+    with st.form("form_eng", clear_on_submit=True):
+        c1, c2 = st.columns(2)
+        tu_vung = c1.text_input("Từ mới")
+        nghia = c2.text_input("Nghĩa tiếng Việt")
+        vi_du = st.text_input("Câu ví dụ (Tùy chọn)")
+        if st.form_submit_button("LƯU TỪ VỰNG"):
+            moi = pd.DataFrame([{'Ngày': str(datetime.now().date()), 'Từ vựng': tu_vung, 'Nghĩa': nghia, 'Ví dụ': vi_du}])
+            df_eng = pd.concat([df_eng, moi], ignore_index=True)
+            save_data(df_eng, FILES['eng'])
+            st.success("Đã nạp thêm đạn từ vựng!")
+            st.rerun()
+    st.dataframe(df_eng, use_container_width=True)
 
-# --- TAB 3: AI BÓC PHỐT ---
+# --- KHU 3: STREETWEAR ---
 with tab3:
-    df_chi = df_loc[df_loc['Loại'] == 'Chi tiêu']
-    if not df_chi.empty:
-        st.bar_chart(df_chi.groupby('Danh mục')['Số tiền (VNĐ)'].sum().reset_index(), x='Danh mục', y='Số tiền (VNĐ)', color="#00C9FF")
-    
-    if st.button("🔥 AI soi mói thói quen xài tiền!", type="primary", use_container_width=True):
-        with st.spinner("AI đang check dữ liệu..."):
-            ds_chi = df_chi[['Danh mục', 'Số tiền (VNĐ)']].to_string()
-            lenh = f"Boss đã tiêu: {ds_chi}. Hãy đóng vai chuyên gia tài chính đanh đá, châm biếm thói tiêu hoang này. Cấm khen!"
-            ket_qua = hoi_ai_gemini(lenh)
-            st.error(ket_qua)
+    st.markdown("### 🧢 Quản Lý Tủ Đồ Hiphop")
+    with st.form("form_fashion", clear_on_submit=True):
+        c1, c2 = st.columns(2)
+        ten_do = c1.text_input("Tên món đồ (VD: Áo thun Oversize)")
+        brand = c2.selectbox("Thương hiệu", ["Saigon Swagger", "Dirty Coins", "SWE", "Tự do", "Khác"])
+        loai_do = st.selectbox("Phân loại", ["Áo", "Quần", "Giày", "Phụ kiện (Mũ, Kính, Túi...)"])
+        mau_sac = st.text_input("Màu sắc")
+        if st.form_submit_button("CẤT VÀO TỦ"):
+            moi = pd.DataFrame([{'Tên món đồ': ten_do, 'Thương hiệu': brand, 'Loại': loai_do, 'Màu sắc': mau_sac}])
+            df_fashion = pd.concat([df_fashion, moi], ignore_index=True)
+            save_data(df_fashion, FILES['fashion'])
+            st.success("Đã update tủ đồ!")
+            st.rerun()
+    st.dataframe(df_fashion, use_container_width=True)
+    if st.button("🔥 Mặc gì hôm nay (Hỏi AI)", use_container_width=True):
+        st.info("Boss hãy sang ô Chat AI bên trái, nhập: 'Hôm nay tôi đi cháy phố, hãy mix cho tôi 1 bộ từ tủ đồ!'")
 
-# --- TAB 4: CHIA BILL ---
+# --- KHU 4: RẠP PHIM ---
 with tab4:
-    c_b1, c_b2 = st.columns(2)
-    tong_bill = c_b1.number_input("Tổng hóa đơn:", min_value=0, step=20000)
-    so_nguoi = c_b2.number_input("Số người:", min_value=1, step=1, value=1)
-    if tong_bill > 0: st.success(f"👉 Mỗi người: **{tong_bill / so_nguoi:,.0f} ₫**")
-
-# --- TAB 5: SỔ EXCEL ---
-with tab5:
-    df_hien_thi = df.copy().drop(columns=['Tháng'], errors='ignore')
-    df_da_sua = st.data_editor(df_hien_thi, num_rows="dynamic", use_container_width=True, key="excel_edit")
-    if st.button("💾 LƯU THAY ĐỔI", use_container_width=True, type="primary"):
-        df_da_sua.to_csv(FILE_DATA, index=False)
-        st.success("Đã lưu vào cơ sở dữ liệu gốc!")
-        st.rerun()
+    st.markdown("### 🍿 Nhật Ký Điện Ảnh")
+    with st.form("form_movie", clear_on_submit=True):
+        c1, c2, c3 = st.columns(3)
+        ngay_xem = c1.date_input("Ngày xem phim")
+        ten_phim = c2.text_input("Tên phim")
+        rap = c3.selectbox("Rạp chiếu", ["Galaxy Sala", "CGV", "Lotte", "Xem ở nhà"])
+        danh_gia = st.slider("Chấm điểm (1-10 ⭐️)", 1, 10, 8)
+        if st.form_submit_button("LƯU PHIM"):
+            moi = pd.DataFrame([{'Ngày xem': str(ngay_xem), 'Tên phim': ten_phim, 'Rạp': rap, 'Đánh giá': f"{danh_gia} ⭐️"}])
+            df_movie = pd.concat([df_movie, moi], ignore_index=True)
+            save_data(df_movie, FILES['movie'])
+            st.success("Đã lưu nhật ký xem phim!")
+            st.rerun()
+    st.dataframe(df_movie, use_container_width=True)
