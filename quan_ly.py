@@ -12,14 +12,13 @@ import requests
 st.set_page_config(page_title="JBLMONEY Ultimate", page_icon="💎", layout="centered")
 
 # =======================================
-# 2. AI VƯỢT RÀO (ĐÃ ĐỔI SANG CỔNG V1 CHUẨN CỦA GOOGLE)
+# 2. AI VƯỢT RÀO (ĐÃ GẮN SẴN MÃ CỦA BOSS)
 # =======================================
-# Mã của Boss đã được gắn bọc thép an toàn tuyệt đối
-API_KEY_CUA_BOSS = "AQ.Ab8RN6L18JnzTtS0ml5Qdks6FT2D-5eBLX-oFq-Hiy9Ca-syww"
+API_KEY_CUA_BOSS = "AQ.Ab8RN6LEdFI7G2-q-Fy43V5HoAPvT5udL47hz8TO2Y7C69HOqA"
 
 def hoi_ai_gemini(cau_hoi):
-    # Nâng cấp lên cổng v1 chính thức và dùng model gemini-1.5-flash chuẩn nhất
-    url = f"https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key={API_KEY_CUA_BOSS}"
+    # Dùng cổng v1beta, truyền key trực tiếp qua URL để né lỗi của thư viện
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={API_KEY_CUA_BOSS}"
     headers = {'Content-Type': 'application/json'}
     data = {"contents": [{"parts": [{"text": cau_hoi}]}]}
     try:
@@ -27,7 +26,7 @@ def hoi_ai_gemini(cau_hoi):
         if response.status_code == 200:
             return response.json()['candidates'][0]['content']['parts'][0]['text']
         else:
-            return f"Báo cáo Boss, Google lại dở chứng: {response.text}"
+            return f"Báo cáo Boss, Google lại dở chứng: Lỗi {response.status_code} - {response.text}"
     except Exception as e:
         return f"Lỗi kết nối mạng: {e}"
 
@@ -99,9 +98,9 @@ with st.sidebar:
     st.markdown("---")
     thang_loc = st.selectbox("📅 Chọn Tháng", range(1, 13), index=int(datetime.now().month-1))
     st.markdown("---")
-    st.markdown("### 🤖 Trợ lý AI")
+    st.markdown("### 🤖 Trợ lý AI (Đã hồi sinh)")
     chat_box = st.container(height=350, border=True)
-    if "chat" not in st.session_state: st.session_state.chat = [{"role": "assistant", "content": "Em đã đổi sang cổng v1 xịn nhất! Boss hỏi em đi!"}]
+    if "chat" not in st.session_state: st.session_state.chat = [{"role": "assistant", "content": "Em đã quay lại rồi đây Boss! Hỏi em đi!"}]
     for msg in st.session_state.chat: chat_box.chat_message(msg["role"]).write(msg["content"])
     
     if q := st.chat_input("Hỏi AI..."):
@@ -185,7 +184,7 @@ with tab3:
     if st.button("🔥 AI soi mói thói quen xài tiền!", type="primary", use_container_width=True):
         with st.spinner("AI đang check dữ liệu..."):
             ds_chi = df_chi[['Danh mục', 'Số tiền (VNĐ)']].to_string()
-            lenh = f"Boss đã tiêu: {ds_chi}. Hãy đóng vai một chuyên gia tài chính đanh đá, châm biếm thói tiêu hoang này. Cấm khen!"
+            lenh = f"Boss đã tiêu: {ds_chi}. Hãy đóng vai chuyên gia tài chính đanh đá, châm biếm thói tiêu hoang này. Cấm khen!"
             ket_qua = hoi_ai_gemini(lenh)
             st.error(ket_qua)
 
