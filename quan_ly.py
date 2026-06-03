@@ -3,7 +3,13 @@ import google.generativeai as genai
 from PIL import Image
 
 # ==========================================
-# 1. GIAO DIỆN LUXURY GOLD (SIÊU MƯỢT)
+# 1. CẤU HÌNH API KEY TRỰC TIẾP
+# ==========================================
+# ⚠️ DÁN MÃ API CỦA BẠN VÀO GIỮA 2 DẤU NGOẶC KÉP BÊN DƯỚI:
+API_KEY = "AQ.Ab8RN6IHlAOP8kXcPptRPWX2DhlTBIXPLKN8nK7YO_uDbAoyvA"
+
+# ==========================================
+# 2. GIAO DIỆN LUXURY GOLD 
 # ==========================================
 st.set_page_config(page_title="VIP Calorie Scanner", page_icon="🍔", layout="centered")
 
@@ -28,65 +34,57 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ==========================================
-# 2. APP SOI CALO ĐỒ ĂN TRỰC TIẾP (KHÔNG FIREBASE)
+# 3. HỆ THỐNG XỬ LÝ HÌNH ẢNH VÀ AI
 # ==========================================
-st.title("🍔 AI MẮT THẦN ĐO CALO")
-st.markdown("<p style='text-align: center; color: #FCF6BA;'>Chụp ảnh đồ ăn, AI sẽ bóc tách từng cọng hành và tính Calo cho Boss!</p>", unsafe_allow_html=True)
+st.title("🍔 MẮT THẦN ĐO CALO")
+st.markdown("<p style='text-align: center; color: #FCF6BA;'>Chụp ảnh đồ ăn, hệ thống sẽ tự động bóc tách thành phần và tính Calo</p>", unsafe_allow_html=True)
 st.markdown("---")
 
-# Ô nhập khóa AI an toàn 
-api_key = st.text_input("🔑 Dán chìa khóa AI (AIza... hoặc AQ...) vào đây để cấp điện cho Mắt Thần:", type="password")
-
-# Bật Camera trực tiếp
-st.markdown("### 📸 MỞ CAMERA LÊN NÀO")
-anh_do_an = st.camera_input("Đưa dĩa thức ăn vào giữa khung hình!")
+st.markdown("### 📸 CAMERA")
+anh_do_an = st.camera_input("Đưa thức ăn vào giữa khung hình")
 
 if anh_do_an:
-    # Đọc ảnh sống trực tiếp từ RAM, không lưu ổ cứng
+    # Đọc ảnh trực tiếp từ bộ nhớ tạm
     img = Image.open(anh_do_an)
     
-    if st.button("🔍 AI XUẤT CHIÊU PHÂN TÍCH"):
-        if not api_key:
-            st.error("⚠️ Boss quên cắm chìa khóa AI kìa! Cắm vào ô bên trên nhé!")
+    if st.button("🔍 PHÂN TÍCH DỮ LIỆU"):
+        if not API_KEY or API_KEY == "DÁN_MÃ_CỦA_BẠN_VÀO_ĐÂY":
+            st.error("⚠️ Lỗi: Chưa cấu hình API Key ở dòng số 8 trong mã nguồn.")
         else:
-            with st.spinner("🤖 AI đang soi từng hạt cơm... Boss đợi chút nhé..."):
+            with st.spinner("🤖 Hệ thống đang phân tích hình ảnh... Vui lòng đợi..."):
                 try:
-                    # 1. Khởi động AI
-                    genai.configure(api_key=api_key)
+                    # Cấu hình AI
+                    genai.configure(api_key=API_KEY)
                     
-                    # 2. Đọc lệnh cho AI
                     lenh_cho_ai = """
-                    Bạn là một chuyên gia dinh dưỡng và thể hình cực kỳ chuyên nghiệp. 
-                    Hãy nhìn bức ảnh đồ ăn này và thực hiện các nhiệm vụ sau:
-                    1. Nhận diện đây là món ăn gì.
-                    2. Liệt kê các thành phần chính có trong đĩa.
+                    Bạn là một chuyên gia dinh dưỡng chuyên nghiệp. 
+                    Hãy nhìn bức ảnh đồ ăn này và thực hiện:
+                    1. Nhận diện món ăn.
+                    2. Liệt kê các thành phần chính.
                     3. Ước tính lượng Calo (Kcal) cho từng thành phần.
-                    4. Tính TỔNG SỐ CALO của cả đĩa thức ăn.
-                    5. Đưa ra 1 lời khuyên ngắn gọn (Món này ăn béo không, hợp để tăng cơ hay giảm mỡ?).
-                    Trình bày bằng tiếng Việt, rõ ràng, đẹp mắt, có dùng icon (emoji).
+                    4. Tính TỔNG SỐ CALO của đĩa thức ăn.
+                    5. Đưa ra 1 lời khuyên ngắn gọn về sức khỏe.
+                    Trình bày bằng tiếng Việt, rõ ràng, chuẩn xác.
                     """
                     
-                    # 3. CHIẾN THUẬT VÉT MÁNG TÌM ĐÚNG ĐỜI AI (CHỐNG LỖI 404)
+                    # Thuật toán dự phòng tự động chuyển phiên bản AI
                     try:
-                        # Thử con 2.5 Flash mới nhất
                         model = genai.GenerativeModel('gemini-2.5-flash')
                         response = model.generate_content([lenh_cho_ai, img])
                     except:
                         try:
-                            # Lùi về 1.5 Flash nếu 2.5 chưa mở
                             model = genai.GenerativeModel('gemini-1.5-flash-latest')
                             response = model.generate_content([lenh_cho_ai, img])
                         except:
-                            # Chốt hạ bằng bản Vision huyền thoại
                             model = genai.GenerativeModel('gemini-pro-vision')
                             response = model.generate_content([lenh_cho_ai, img])
                     
-                    # 4. In kết quả 
+                    # Hiển thị kết quả
                     st.balloons()
                     st.markdown("<div class='ai-box'>", unsafe_allow_html=True)
-                    st.markdown("### 📊 KẾT QUẢ TỪ CHUYÊN GIA AI")
+                    st.markdown("### 📊 KẾT QUẢ PHÂN TÍCH")
                     st.markdown(response.text)
                     st.markdown("</div>", unsafe_allow_html=True)
                     
                 except Exception as e:
-                    st.error(f"❌ Lỗi kết nối máy chủ: {e}\n\n👉 Boss nhớ kiểm tra lại file requirements.txt trên Github nhé!")
+                    st.error(f"❌ Lỗi hệ thống: {e}")
