@@ -1,3 +1,7 @@
 streamlit
 pandas
 google-generativeai
+streamlit
+pandas
+Pillow
+google-generativeai>=0.5.2
